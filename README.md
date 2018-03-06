@@ -11,16 +11,40 @@ TensorFlow implementation of deep Q-learning.
 ## Uninstall
 
 1. Deactivate conda environment: `source deactivate`.
-
 2. Remove `dqn` conda environment: `conda env remove -n dqn`.
 
-## Train
+## Usage
 
-`python run.py -env Breakout`
+Basic file is `run.py`.
 
-## Play
+```
+usage: run.py [-h] [--env ENV] [--play]
 
-`python run.py -play`
+optional arguments:
+  -h, --help  show this help message and exit
+  --env ENV   Atari game name (default: MontezumaRevenge)
+  --play      Play with WSAD + Space (default: False)
+```
+
+### Train
+
+`python run.py --env Pong`
+
+There are 60 games you can choose from:
+
+`AirRaid, Alien, Amidar, Assault, Asterix, Asteroids, Atlantis, BankHeist, BattleZone, BeamRider, Berzerk, Bowling, Boxing, Breakout, Carnival, Centipede, ChopperCommand, CrazyClimber, DemonAttack, DoubleDunk, ElevatorAction, Enduro, FishingDerby, Freeway, Frostbite, Gopher, Gravitar, Hero, IceHockey, Jamesbond, JourneyEscape, Kangaroo, Krull, KungFuMaster, MontezumaRevenge, MsPacman, NameThisGame, Phoenix, Pitfall, Pong, Pooyan, PrivateEye, Qbert, Riverraid, RoadRunner, Robotank, Seaquest, Skiing, Solaris, SpaceInvaders, StarGunner, Tennis, TimePilot, Tutankham, UpNDown, Venture, VideoPinball, WizardOfWor, YarsRevenge, Zaxxon`
+
+### Play using AI observations
+
+`python run.py --play`
+
+Keys:
+
+- <kbd>W</kbd> - up
+- <kbd>S</kbd> - down
+- <kbd>A</kbd> - left
+- <kbd>D</kbd> - right
+- <kbd>SPACE</kbd> - fire button (concrete action depends on a game)
 
 ## Priorities
 
@@ -37,3 +61,4 @@ https://blog.openai.com/openai-baselines-dqn
 https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
 https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
 https://github.com/openai/gym/blob/master/gym/envs/__init__.py#L483
+https://cloud.google.com/tpu/docs/concepts

@@ -19,8 +19,8 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-play', dest='play', action='store_true', default=False)
-    parser.add_argument('-env', dest='env', action='store', default='Breakout')
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--env', action='store', default='MontezumaRevenge', help='Atari game name')
+    parser.add_argument('--play', action='store_true', default=False, help='Play with WSAD + Space')
     args = parser.parse_args()
     main(args)
