@@ -58,11 +58,11 @@ Keys:
 
 ## Links
 
-https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
-https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf
-https://becominghuman.ai/lets-build-an-atari-ai-part-1-dqn-df57e8ff3b26
-https://blog.openai.com/openai-baselines-dqn
-https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
-https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
-https://github.com/openai/gym/blob/master/gym/envs/__init__.py#L483
-https://cloud.google.com/tpu/docs/concepts
+- https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
+- https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf
+- https://becominghuman.ai/lets-build-an-atari-ai-part-1-dqn-df57e8ff3b26
+- https://blog.openai.com/openai-baselines-dqn
+- https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
+- https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
+- https://github.com/openai/gym/blob/master/gym/envs/__init__.py#L483
+- https://cloud.google.com/tpu/docs/concepts
