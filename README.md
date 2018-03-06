@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/AdamStelmaszczyk/dqn.svg?branch=master)](https://travis-ci.org/AdamStelmaszczyk/dqn)
+
 TensorFlow implementation of deep Q-learning.
 
 ## Install
@@ -7,6 +9,8 @@ TensorFlow implementation of deep Q-learning.
 3. Create `dqn` conda environment: `conda create -n dqn python=3.5.2`.
 4. Activate `dqn` conda environment: `source activate dqn`. All the following commands should be run in the activated `dqn` environment.
 5. Install dependencies: `pip install -r requirements.txt`.
+
+There is an automatic build on Travis which [does the same](https://github.com/AdamStelmaszczyk/dqn/blob/master/.travis.yml).
 
 ## Uninstall
 

@@ -1,0 +1,22 @@
+language: python
+
+before_install:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+
+install:
+  - sudo apt-get update
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -n dqn python=3.5.2
+  - source activate dqn
+  - pip install -r requirements.txt
+
+script:
+  - git clone https://github.com/AdamStelmaszczyk/dqn.git
+  - cd dqn
+  - python run.py
