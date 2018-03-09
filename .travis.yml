@@ -19,4 +19,4 @@ install:
 script:
   - git clone https://github.com/AdamStelmaszczyk/dqn.git
   - cd dqn
-  - python run.py
+  - python run.py --test

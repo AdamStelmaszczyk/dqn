@@ -1,5 +1,6 @@
-# This file is from https://github.com/openai/baselines,
-# commit edb52c22a5e14324304a491edc0f91b6cc07453b, its license:
+# This file was based on
+# https://github.com/openai/baselines/blob/edb52c22a5e14324304a491edc0f91b6cc07453b/baselines/common/atari_wrappers.py
+# its license:
 #
 # The MIT License
 #
@@ -23,11 +24,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import numpy as np
 from collections import deque
-import gym
-from gym import spaces
+
 import cv2
+import gym
+import numpy as np
+from gym import spaces
 
 cv2.ocl.setUseOpenCL(False)
 

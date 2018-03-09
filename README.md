@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/AdamStelmaszczyk/dqn.svg?branch=master)](https://travis-ci.org/AdamStelmaszczyk/dqn)
 
-TensorFlow implementation of deep Q-learning.
+TensorFlow + Keras implementation of deep Q-learning.
 
 ## Install
 
@@ -22,12 +22,14 @@ There is an automatic build on Travis which [does the same](https://github.com/A
 Basic file is `run.py`.
 
 ```
-usage: run.py [-h] [--env ENV] [--play]
+usage: run.py [-h] [--env ENV] [--play] [--seed SEED] [--test]
 
 optional arguments:
-  -h, --help  show this help message and exit
-  --env ENV   Atari game name (default: MontezumaRevenge)
-  --play      Play with WSAD + Space (default: False)
+  -h, --help   show this help message and exit
+  --env ENV    Atari game name (default: Breakout)
+  --play       play with WSAD + Space (default: False)
+  --seed SEED  pseudo random number generator seed (default: None)
+  --test       run tests (default: False)
 ```
 
 ### Train
