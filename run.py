@@ -84,6 +84,12 @@ def epsilon_greedy(env, model, observation, step):
     return action
 
 
+def save_model(env, model, step):
+    filename = '{}-{}-{}.h5'.format(env.spec.id, time.strftime("%m-%d-%H-%M"), step)
+    model.save(filename)
+    print('Saved {}'.format(filename))
+
+
 def train(env, model, max_time_steps):
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
@@ -92,42 +98,44 @@ def train(env, model, max_time_steps):
     board = TensorBoardLogger(logdir)
     print('Created {}'.format(logdir))
     for step in range(1, max_time_steps):
-        if step % SNAPSHOT_EVERY == 0:
-            filename = '{}-{}-{}.h5'.format(env.spec.id, time.strftime("%m-%d-%H-%M"), step)
-            model.save(filename)
-            print('Saved {}'.format(filename))
-        if done:
-            if episode > 0 and episode % LOG_EVERY_EPISODE == 0:
-                episode_end = time.time()
-                episode_seconds = episode_end - episode_start
-                episode_steps = step - episode_start_step
-                steps_per_second = episode_steps / episode_seconds
-                print("episode {} steps {}/{} return {} in {:.2f}s {:.1f} steps/s".format(
-                    episode,
-                    episode_steps,
-                    step,
-                    episode_return,
-                    episode_seconds,
-                    steps_per_second,
-                ))
-                board.log_scalar('episode_return', episode_return, step)
-                board.log_scalar('episode_steps', episode_steps, step)
-                board.log_scalar('episode_seconds', episode_seconds, step)
-                board.log_scalar('steps_per_second', steps_per_second, step)
-            episode_start = time.time()
-            episode_start_step = step
-            obs = env.reset()
-            episode += 1
-            episode_return = 0.0
-        else:
-            obs = next_obs
-        action = epsilon_greedy(env, model, obs, step)
-        next_obs, reward, done, _ = env.step(action)
-        episode_return += reward
-        replay.add(obs, action, reward, next_obs, done)
-        if step >= REPLAY_START_SIZE and step % UPDATE_FREQUENCY == 0:
-            batch = replay.sample(BATCH_SIZE)
-            fit_batch(env, model, batch)
+        try:
+            if step % SNAPSHOT_EVERY == 0:
+                save_model(env, model, step)
+            if done:
+                if episode > 0 and episode % LOG_EVERY_EPISODE == 0:
+                    episode_end = time.time()
+                    episode_seconds = episode_end - episode_start
+                    episode_steps = step - episode_start_step
+                    steps_per_second = episode_steps / episode_seconds
+                    print("episode {} steps {}/{} return {} in {:.2f}s {:.1f} steps/s".format(
+                        episode,
+                        episode_steps,
+                        step,
+                        episode_return,
+                        episode_seconds,
+                        steps_per_second,
+                    ))
+                    board.log_scalar('episode_return', episode_return, step)
+                    board.log_scalar('episode_steps', episode_steps, step)
+                    board.log_scalar('episode_seconds', episode_seconds, step)
+                    board.log_scalar('steps_per_second', steps_per_second, step)
+                episode_start = time.time()
+                episode_start_step = step
+                obs = env.reset()
+                episode += 1
+                episode_return = 0.0
+            else:
+                obs = next_obs
+            action = epsilon_greedy(env, model, obs, step)
+            next_obs, reward, done, _ = env.step(action)
+            episode_return += reward
+            replay.add(obs, action, reward, next_obs, done)
+            if step >= REPLAY_START_SIZE and step % UPDATE_FREQUENCY == 0:
+                batch = replay.sample(BATCH_SIZE)
+                fit_batch(env, model, batch)
+        except KeyboardInterrupt:
+            save_model(env, model, step)
+            break
 
 
 def main(args):
