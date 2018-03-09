@@ -15,6 +15,7 @@ BATCH_SIZE = 32
 REPLAY_START_SIZE = 50000
 MAX_TIME_STEPS = 5000000
 SNAPSHOT_EVERY = 100000
+UPDATE_FREQUENCY = 4
 
 
 def one_hot_encode(env, action):
@@ -111,11 +112,10 @@ def train(env, model, max_time_steps):
         else:
             obs = next_obs
         action = epsilon_greedy(env, model, obs, step)
-        # TODO: according to the paper, we should play 4 times here, this is UPDATE_FREQUENCY
         next_obs, reward, done, _ = env.step(action)
         episode_return += reward
         replay.add(obs, action, reward, next_obs, done)
-        if step >= REPLAY_START_SIZE:
+        if step >= REPLAY_START_SIZE and step % UPDATE_FREQUENCY == 0:
             batch = replay.sample(BATCH_SIZE)
             fit_batch(env, model, batch)
 
