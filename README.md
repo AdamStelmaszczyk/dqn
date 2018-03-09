@@ -25,11 +25,12 @@ Basic file is `run.py`.
 usage: run.py [-h] [--env ENV] [--play] [--seed SEED] [--test]
 
 optional arguments:
-  -h, --help   show this help message and exit
-  --env ENV    Atari game name (default: Breakout)
-  --play       play with WSAD + Space (default: False)
-  --seed SEED  pseudo random number generator seed (default: None)
-  --test       run tests (default: False)
+  -h, --help     show this help message and exit
+  --env ENV      Atari game name (default: Breakout)
+  --model MODEL  model filename to load (default: None)
+  --play         play with WSAD + Space (default: False)
+  --seed SEED    pseudo random number generator seed (default: None)
+  --test         run tests (default: False)
 ```
 
 ### Train

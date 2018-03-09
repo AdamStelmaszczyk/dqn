@@ -1,6 +1,7 @@
 import argparse
 import random
-from time import time
+import time
+
 import numpy as np
 import tensorflow.contrib.keras as keras
 from gym.utils.play import play
@@ -13,6 +14,7 @@ DISCOUNT_FACTOR_GAMMA = 0.99
 BATCH_SIZE = 32
 REPLAY_START_SIZE = 50000
 MAX_TIME_STEPS = 5000000
+SNAPSHOT_EVERY = 100000
 
 
 def one_hot_encode(env, action):
@@ -39,7 +41,7 @@ def fit_batch(env, model, batch):
     )
 
 
-def atari_model(env):
+def create_atari_model(env):
     n_actions = env.action_space.n
     obs_shape = env.observation_space.shape
     print('n_actions {}'.format(n_actions))
@@ -79,15 +81,18 @@ def epsilon_greedy(env, model, observation, step):
     return action
 
 
-def train(env, max_time_steps):
+def train(env, model, max_time_steps):
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
-    model = atari_model(env)
     done = True
     episode = 0
-    for step in range(max_time_steps):
+    for step in range(1, max_time_steps):
+        if step % SNAPSHOT_EVERY == 0:
+            filename = '{}-{}-{}.h5'.format(env.spec.id, time.strftime("%m-%d-%H-%M"), step)
+            model.save(filename)
+            print('Saved {}'.format(filename))
         if done:
             if episode > 0:
-                episode_end = time()
+                episode_end = time.time()
                 seconds = episode_end - episode_start
                 episode_steps = step - episode_start_step
                 print("episode {} steps {}/{} return {} in {:.1f}s {:.1f} steps/s".format(
@@ -98,7 +103,7 @@ def train(env, max_time_steps):
                     seconds,
                     episode_steps / seconds,
                 ))
-            episode_start = time()
+            episode_start = time.time()
             episode_start_step = step
             obs = env.reset()
             episode += 1
@@ -125,15 +130,21 @@ def main(args):
         play(env)
     else:
         env = wrap_deepmind(env, frame_stack=True)
-        if args.test:
-            train(env, max_time_steps=100)
+        if args.model:
+            model = keras.models.load_model(args.model)
+            print('Loaded {}'.format(args.model))
         else:
-            train(env, max_time_steps=MAX_TIME_STEPS)
+            model = create_atari_model(env)
+        if args.test:
+            train(env, model, max_time_steps=100)
+        else:
+            train(env, model, max_time_steps=MAX_TIME_STEPS)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
+    parser.add_argument('--model', action='store', default=None, help='h5 model filename to load')
     parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
     parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
     parser.add_argument('--test', action='store_true', default=False, help='run tests')
