@@ -3,8 +3,13 @@ import random
 import time
 
 import numpy as np
+import pyglet
 import tensorflow.contrib.keras as keras
-from gym.utils.play import play
+
+try:
+    from gym.utils.play import play
+except pyglet.canvas.xlib.NoSuchDisplayException:
+    print("No X server running on $DISPLAY, so interactive --play won't work.")
 
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
