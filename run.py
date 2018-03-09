@@ -8,6 +8,7 @@ from gym.utils.play import play
 
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
+from tensor_board_logger import TensorBoardLogger
 
 REPLAY_BUFFER_SIZE = 1000
 DISCOUNT_FACTOR_GAMMA = 0.99
@@ -15,6 +16,7 @@ BATCH_SIZE = 32
 REPLAY_START_SIZE = 50000
 MAX_TIME_STEPS = 5000000
 SNAPSHOT_EVERY = 100000
+LOG_EVERY_EPISODE = 100
 UPDATE_FREQUENCY = 4
 
 
@@ -86,24 +88,32 @@ def train(env, model, max_time_steps):
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
     episode = 0
+    logdir = '{}-{}-log'.format(env.spec.id, time.strftime("%m-%d-%H-%M"))
+    board = TensorBoardLogger(logdir)
+    print('Created {}'.format(logdir))
     for step in range(1, max_time_steps):
         if step % SNAPSHOT_EVERY == 0:
             filename = '{}-{}-{}.h5'.format(env.spec.id, time.strftime("%m-%d-%H-%M"), step)
             model.save(filename)
             print('Saved {}'.format(filename))
         if done:
-            if episode > 0:
+            if episode > 0 and episode % LOG_EVERY_EPISODE == 0:
                 episode_end = time.time()
-                seconds = episode_end - episode_start
+                episode_seconds = episode_end - episode_start
                 episode_steps = step - episode_start_step
-                print("episode {} steps {}/{} return {} in {:.1f}s {:.1f} steps/s".format(
+                steps_per_second = episode_steps / episode_seconds
+                print("episode {} steps {}/{} return {} in {:.2f}s {:.1f} steps/s".format(
                     episode,
                     episode_steps,
                     step,
                     episode_return,
-                    seconds,
-                    episode_steps / seconds,
+                    episode_seconds,
+                    steps_per_second,
                 ))
+                board.log_scalar('episode_return', episode_return, step)
+                board.log_scalar('episode_steps', episode_steps, step)
+                board.log_scalar('episode_seconds', episode_seconds, step)
+                board.log_scalar('steps_per_second', steps_per_second, step)
             episode_start = time.time()
             episode_start_step = step
             obs = env.reset()
