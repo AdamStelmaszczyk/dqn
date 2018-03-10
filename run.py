@@ -71,7 +71,7 @@ def create_atari_model(env):
 
 
 def epsilon_for_step(step):
-    # epsilon annealed linearly from 1 to 0.1 over first million of iterations and fixed at 0.1 thereafter
+    # epsilon annealed linearly from 1 to 0.1 over first million of steps and fixed at 0.1 thereafter
     return max(-9e-7 * step + 1, 0.1)
 
 
