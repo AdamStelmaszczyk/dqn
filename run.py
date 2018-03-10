@@ -70,7 +70,7 @@ def create_atari_model(env):
     return model
 
 
-def get_epsilon_for_iteration(step):
+def epsilon_for_step(step):
     # epsilon annealed linearly from 1 to 0.1 over first million of iterations and fixed at 0.1 thereafter
     return max(-9e-7 * step + 1, 0.1)
 
@@ -81,7 +81,7 @@ def greedy_action(env, model, observation):
 
 
 def epsilon_greedy(env, model, observation, step):
-    epsilon = get_epsilon_for_iteration(step)
+    epsilon = epsilon_for_step(step)
     if random.random() < epsilon:
         action = env.action_space.sample()
     else:
@@ -124,6 +124,7 @@ def train(env, model, max_time_steps):
                     board.log_scalar('episode_steps', episode_steps, step)
                     board.log_scalar('episode_seconds', episode_seconds, step)
                     board.log_scalar('steps_per_second', steps_per_second, step)
+                    board.log_scalar('epsilon', epsilon_for_step(step), step)
                 episode_start = time.time()
                 episode_start_step = step
                 obs = env.reset()
