@@ -3,6 +3,7 @@ import random
 import time
 
 import numpy as np
+import psutil
 import pyglet
 import tensorflow.contrib.keras as keras
 
@@ -112,19 +113,24 @@ def train(env, model, max_time_steps):
                     episode_seconds = episode_end - episode_start
                     episode_steps = step - episode_start_step
                     steps_per_second = episode_steps / episode_seconds
-                    print("episode {} steps {}/{} return {} in {:.2f}s {:.1f} steps/s".format(
+                    memory = psutil.virtual_memory()
+                    to_gb = lambda in_bytes: in_bytes / 1024 / 1024 / 1024
+                    print("episode {} steps {}/{} return {} in {:.2f}s {:.1f} steps/s {:.1f}/{:.1f} GB RAM".format(
                         episode,
                         episode_steps,
                         step,
                         episode_return,
                         episode_seconds,
                         steps_per_second,
+                        to_gb(memory.used),
+                        to_gb(memory.total),
                     ))
                     board.log_scalar('episode_return', episode_return, step)
                     board.log_scalar('episode_steps', episode_steps, step)
                     board.log_scalar('episode_seconds', episode_seconds, step)
                     board.log_scalar('steps_per_second', steps_per_second, step)
                     board.log_scalar('epsilon', epsilon_for_step(step), step)
+                    board.log_scalar('memory_used', to_gb(memory.used), step)
                 episode_start = time.time()
                 episode_start_step = step
                 obs = env.reset()
