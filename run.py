@@ -15,12 +15,12 @@ from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
 from tensor_board_logger import TensorBoardLogger
 
-REPLAY_BUFFER_SIZE = 1000
+REPLAY_BUFFER_SIZE = 1000000
 DISCOUNT_FACTOR_GAMMA = 0.99
 BATCH_SIZE = 32
 REPLAY_START_SIZE = 50000
-MAX_TIME_STEPS = 5000000
-SNAPSHOT_EVERY = 100000
+MAX_TIME_STEPS = 10000000
+SNAPSHOT_EVERY = 1000000
 LOG_EVERY_EPISODE = 100
 UPDATE_FREQUENCY = 4
 
