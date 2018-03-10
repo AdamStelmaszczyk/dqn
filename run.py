@@ -145,7 +145,7 @@ def train(env, model, max_time_steps):
 
 
 def main(args):
-    assert REPLAY_START_SIZE >= BATCH_SIZE
+    assert BATCH_SIZE <= REPLAY_START_SIZE <= REPLAY_BUFFER_SIZE
     random.seed(args.seed)
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
     env.seed(args.seed)
