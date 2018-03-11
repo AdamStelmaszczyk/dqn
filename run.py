@@ -23,7 +23,7 @@ REPLAY_START_SIZE = 50000
 REPLAY_BUFFER_SIZE = 1000000
 MAX_TIME_STEPS = 10000000
 SNAPSHOT_EVERY = 1000000
-LOG_EVERY_EPISODE = 100
+LOG_EVERY = 10000
 
 
 def one_hot_encode(env, action):
@@ -103,12 +103,14 @@ def train(env, model, max_time_steps):
     logdir = '{}-{}-log'.format(env.spec.id, time.strftime("%m-%d-%H-%M"))
     board = TensorBoardLogger(logdir)
     print('Created {}'.format(logdir))
+    steps_after_logging = 0
     for step in range(1, max_time_steps):
         try:
             if step % SNAPSHOT_EVERY == 0:
                 save_model(env, model, step)
             if done:
-                if episode > 0 and episode % LOG_EVERY_EPISODE == 0:
+                if episode > 0 and steps_after_logging >= LOG_EVERY:
+                    steps_after_logging = 0
                     episode_end = time.time()
                     episode_seconds = episode_end - episode_start
                     episode_steps = step - episode_start_step
@@ -145,6 +147,7 @@ def train(env, model, max_time_steps):
             if step >= REPLAY_START_SIZE and step % UPDATE_FREQUENCY == 0:
                 batch = replay.sample(BATCH_SIZE)
                 fit_batch(env, model, batch)
+            steps_after_logging += 1
         except KeyboardInterrupt:
             save_model(env, model, step)
             break
