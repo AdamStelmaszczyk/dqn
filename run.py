@@ -54,6 +54,7 @@ def create_atari_model(env):
     n_actions = env.action_space.n
     obs_shape = env.observation_space.shape
     print('n_actions {}'.format(n_actions))
+    print(' '.join(env.unwrapped.get_action_meanings()))
     print('obs_shape {}'.format(obs_shape))
     frames_input = keras.layers.Input(obs_shape, name='frames_input')
     actions_input = keras.layers.Input((n_actions,), name='actions_input')
