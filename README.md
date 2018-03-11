@@ -15,7 +15,7 @@ There is an automatic build on Travis which [does the same](https://github.com/A
 ## Uninstall
 
 1. Deactivate conda environment: `source deactivate`.
-2. Remove `dqn` conda environment: `conda env remove -n dqn`.
+2. Remove `dqn` conda environment: `conda env remove -n dqn -y`.
 
 ## Usage
 
