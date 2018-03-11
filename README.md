@@ -6,7 +6,7 @@ TensorFlow + Keras implementation of deep Q-learning.
 
 1. Clone this repo: `git clone https://github.com/AdamStelmaszczyk/dqn.git`.
 2. [Install `conda`](https://conda.io/docs/user-guide/install/index.html) for dependency management.
-3. Create `dqn` conda environment: `conda create -n dqn python=3.5.2`.
+3. Create `dqn` conda environment: `conda create -n dqn python=3.5.2 -y`.
 4. Activate `dqn` conda environment: `source activate dqn`. All the following commands should be run in the activated `dqn` environment.
 5. Install dependencies: `pip install -r requirements.txt`.
 
