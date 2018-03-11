@@ -81,7 +81,7 @@ def greedy_action(env, model, observation):
     return np.argmax(next_q_values)
 
 
-def epsilon_greedy(env, model, observation, step):
+def epsilon_greedy_action(env, model, observation, step):
     epsilon = epsilon_for_step(step)
     if random.random() < epsilon:
         action = env.action_space.sample()
@@ -140,7 +140,7 @@ def train(env, model, max_time_steps):
                 episode_return = 0.0
             else:
                 obs = next_obs
-            action = epsilon_greedy(env, model, obs, step)
+            action = epsilon_greedy_action(env, model, obs, step)
             next_obs, reward, done, _ = env.step(action)
             episode_return += reward
             replay.add(obs, action, reward, next_obs, done)
@@ -153,6 +153,19 @@ def train(env, model, max_time_steps):
             break
 
 
+def view(env, model):
+    done = True
+    while True:
+        if done:
+            obs = env.reset()
+            env.render()
+        else:
+            obs = next_obs
+        action = greedy_action(env, model, obs)
+        next_obs, reward, done, _ = env.step(action)
+        env.render()
+
+
 def main(args):
     assert BATCH_SIZE <= REPLAY_START_SIZE <= REPLAY_BUFFER_SIZE
     random.seed(args.seed)
@@ -163,11 +176,14 @@ def main(args):
         play(env)
     else:
         env = wrap_deepmind(env, frame_stack=True)
-        if args.model:
-            model = keras.models.load_model(args.model)
-            print('Loaded {}'.format(args.model))
+        model_filename = args.model or args.view
+        if model_filename:
+            model = keras.models.load_model(model_filename)
+            print('Loaded {}'.format(model_filename))
         else:
             model = create_atari_model(env)
+        if args.view:
+            view(env, model)
         if args.test:
             train(env, model, max_time_steps=100)
         else:
@@ -177,9 +193,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
-    parser.add_argument('--model', action='store', default=None, help='h5 model filename to load')
+    parser.add_argument('--model', action='store', default=None, help='model filename to load')
     parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
     parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
     parser.add_argument('--test', action='store_true', default=False, help='run tests')
+    parser.add_argument('--view', action='store', metavar='MODEL', default=None, help='view the model playing the game')
     args = parser.parse_args()
     main(args)

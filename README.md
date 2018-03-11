@@ -31,6 +31,7 @@ optional arguments:
   --play         play with WSAD + Space (default: False)
   --seed SEED    pseudo random number generator seed (default: None)
   --test         run tests (default: False)
+  --view MODEL   view the model playing the game (default: None)
 ```
 
 ### Train
