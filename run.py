@@ -17,7 +17,8 @@ from replay_buffer import ReplayBuffer
 from tensor_board_logger import TensorBoardLogger
 
 DISCOUNT_FACTOR_GAMMA = 0.99
-UPDATE_FREQUENCY = 4
+UPDATE_EVERY = 4
+TARGET_UPDATE_EVERY = 10000
 BATCH_SIZE = 32
 REPLAY_START_SIZE = 50000
 REPLAY_BUFFER_SIZE = 1000000
@@ -32,10 +33,10 @@ def one_hot_encode(env, action):
     return one_hot
 
 
-def fit_batch(env, model, batch):
+def fit_batch(env, model, target_model, batch):
     observations, actions, rewards, next_observations, dones = batch
     # Predict the Q values of the next states. Passing ones as the action mask.
-    next_q_values = model.predict([next_observations, np.ones((BATCH_SIZE, env.action_space.n))])
+    next_q_values = target_model.predict([next_observations, np.ones((BATCH_SIZE, env.action_space.n))])
     # The Q values of terminal states is 0 by definition.
     next_q_values[dones] = 0.0
     # The Q values of each start state is the reward + gamma * the max next state Q value
@@ -98,6 +99,7 @@ def save_model(env, model, step):
 
 
 def train(env, model, max_steps):
+    target_model = create_atari_model(env)
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
     episode = 0
@@ -145,9 +147,11 @@ def train(env, model, max_steps):
             next_obs, reward, done, _ = env.step(action)
             episode_return += reward
             replay.add(obs, action, reward, next_obs, done)
-            if step >= REPLAY_START_SIZE and step % UPDATE_FREQUENCY == 0:
+            if step >= REPLAY_START_SIZE and step % UPDATE_EVERY == 0:
+                if step % TARGET_UPDATE_EVERY == 0:
+                    target_model.set_weights(model.get_weights())
                 batch = replay.sample(BATCH_SIZE)
-                fit_batch(env, model, batch)
+                fit_batch(env, model, target_model, batch)
             steps_after_logging += 1
         except KeyboardInterrupt:
             save_model(env, model, step)
@@ -181,6 +185,7 @@ def view(env, model):
 
 def main(args):
     assert BATCH_SIZE <= REPLAY_START_SIZE <= REPLAY_BUFFER_SIZE
+    assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
     random.seed(args.seed)
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
     env.seed(args.seed)
