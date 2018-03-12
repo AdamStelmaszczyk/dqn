@@ -21,7 +21,7 @@ UPDATE_FREQUENCY = 4
 BATCH_SIZE = 32
 REPLAY_START_SIZE = 50000
 REPLAY_BUFFER_SIZE = 1000000
-MAX_TIME_STEPS = 10000000
+MAX_STEPS = 10000000
 SNAPSHOT_EVERY = 1000000
 LOG_EVERY = 10000
 
@@ -97,7 +97,7 @@ def save_model(env, model, step):
     print('Saved {}'.format(filename))
 
 
-def train(env, model, max_time_steps):
+def train(env, model, max_steps):
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
     episode = 0
@@ -105,7 +105,7 @@ def train(env, model, max_time_steps):
     board = TensorBoardLogger(logdir)
     print('Created {}'.format(logdir))
     steps_after_logging = 0
-    for step in range(1, max_time_steps):
+    for step in range(1, max_steps):
         try:
             if step % SNAPSHOT_EVERY == 0:
                 save_model(env, model, step)
@@ -186,9 +186,9 @@ def main(args):
         if args.view:
             view(env, model)
         if args.test:
-            train(env, model, max_time_steps=100)
+            train(env, model, max_steps=100)
         else:
-            train(env, model, max_time_steps=MAX_TIME_STEPS)
+            train(env, model, max_steps=MAX_STEPS)
 
 
 if __name__ == '__main__':
