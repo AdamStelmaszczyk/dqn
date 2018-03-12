@@ -20,10 +20,13 @@ DISCOUNT_FACTOR_GAMMA = 0.99
 UPDATE_EVERY = 4
 TARGET_UPDATE_EVERY = 10000
 BATCH_SIZE = 32
-REPLAY_START_SIZE = 50000
+TRAIN_START = 50000
 REPLAY_BUFFER_SIZE = 1000000
 MAX_STEPS = 10000000
 SNAPSHOT_EVERY = 1000000
+EVAL_EVERY = 250000
+EVAL_STEPS = 135000
+EVAL_EPSILON = 0.05
 LOG_EVERY = 10000
 
 
@@ -83,8 +86,7 @@ def greedy_action(env, model, observation):
     return np.argmax(next_q_values)
 
 
-def epsilon_greedy_action(env, model, observation, step):
-    epsilon = epsilon_for_step(step)
+def epsilon_greedy_action(env, model, observation, epsilon):
     if random.random() < epsilon:
         action = env.action_space.sample()
     else:
@@ -98,7 +100,26 @@ def save_model(env, model, step):
     print('Saved {}'.format(filename))
 
 
-def train(env, model, max_steps):
+def evaluate(env, model):
+    done = True
+    total_episode_reward = 0.0
+    episode = 0
+    episode_return = 0.0
+    for i in range(1, EVAL_STEPS):
+        if done:
+            obs = env.reset()
+            total_episode_reward += episode_return
+            episode += 1
+            episode_return = 0.0
+        else:
+            obs = next_obs
+        action = epsilon_greedy_action(env, model, obs, EVAL_EPSILON)
+        next_obs, reward, done, _ = env.step(action)
+        episode_return += reward
+    return total_episode_reward / episode
+
+
+def train(env, env_eval, model, max_steps):
     target_model = create_atari_model(env)
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
@@ -143,15 +164,20 @@ def train(env, model, max_steps):
                 episode_return = 0.0
             else:
                 obs = next_obs
-            action = epsilon_greedy_action(env, model, obs, step)
+            epsilon = epsilon_for_step(step)
+            action = epsilon_greedy_action(env, model, obs, epsilon)
             next_obs, reward, done, _ = env.step(action)
             episode_return += reward
             replay.add(obs, action, reward, next_obs, done)
-            if step >= REPLAY_START_SIZE and step % UPDATE_EVERY == 0:
+            if step >= TRAIN_START and step % UPDATE_EVERY == 0:
                 if step % TARGET_UPDATE_EVERY == 0:
                     target_model.set_weights(model.get_weights())
                 batch = replay.sample(BATCH_SIZE)
                 fit_batch(env, model, target_model, batch)
+            if step >= TRAIN_START and step % EVAL_EVERY == 0:
+                average_episode_reward = evaluate(env_eval, model)
+                print('episode {} step {} average_episode_reward {}'.format(episode, step, average_episode_reward))
+                board.log_scalar('average_episode_reward', average_episode_reward, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
             save_model(env, model, step)
@@ -183,29 +209,34 @@ def view(env, model):
         episode_steps += 1
 
 
+def load_or_create_model(env, model_filename):
+    if model_filename:
+        model = keras.models.load_model(model_filename)
+        print('Loaded {}'.format(model_filename))
+    else:
+        model = create_atari_model(env)
+    return model
+
+
 def main(args):
-    assert BATCH_SIZE <= REPLAY_START_SIZE <= REPLAY_BUFFER_SIZE
+    assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
     random.seed(args.seed)
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
     env.seed(args.seed)
     if args.play:
-        env = wrap_deepmind(env, frame_stack=False)
+        env = wrap_deepmind(env)
         play(env)
     else:
-        env = wrap_deepmind(env, frame_stack=True)
+        env_train = wrap_deepmind(env, frame_stack=True, episode_life=True)
         model_filename = args.model or args.view
-        if model_filename:
-            model = keras.models.load_model(model_filename)
-            print('Loaded {}'.format(model_filename))
-        else:
-            model = create_atari_model(env)
+        model = load_or_create_model(env_train, model_filename)
         if args.view:
-            view(env, model)
-        if args.test:
-            train(env, model, max_steps=100)
+            view(env_train, model)
         else:
-            train(env, model, max_steps=MAX_STEPS)
+            env_eval = wrap_deepmind(env, frame_stack=True)
+            max_steps = 100 if args.test else MAX_STEPS
+            train(env_train, env_eval, model, max_steps)
 
 
 if __name__ == '__main__':
@@ -216,5 +247,4 @@ if __name__ == '__main__':
     parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
     parser.add_argument('--test', action='store_true', default=False, help='run tests')
     parser.add_argument('--view', action='store', metavar='MODEL', default=None, help='view the model playing the game')
-    args = parser.parse_args()
-    main(args)
+    main(parser.parse_args())

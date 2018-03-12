@@ -56,12 +56,6 @@ Keys:
 - <kbd>D</kbd> - right
 - <kbd>SPACE</kbd> - fire button (concrete action depends on a game)
 
-## Priorities
-
-1. Correctness.
-2. Ease of running on TPU.
-3. Simplicity.
-
 ## Links
 
 - https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf
@@ -71,4 +65,4 @@ Keys:
 - https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
 - https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
 - https://github.com/openai/gym/blob/master/gym/envs/__init__.py#L483
-- https://cloud.google.com/tpu/docs/concepts
+- https://github.com/kuz/DeepMind-Atari-Deep-Q-Learner
