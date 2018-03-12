@@ -1,10 +1,10 @@
-import argparse
-import random
 import time
 
+import argparse
 import numpy as np
 import psutil
 import pyglet
+import random
 import tensorflow.contrib.keras as keras
 
 try:
@@ -156,15 +156,27 @@ def train(env, model, max_steps):
 
 def view(env, model):
     done = True
+    episode = 0
     while True:
         if done:
+            if episode > 0:
+                print("episode {} steps {} return {}".format(
+                    episode,
+                    episode_steps,
+                    episode_return,
+                ))
             obs = env.reset()
             env.render()
+            episode += 1
+            episode_return = 0.0
+            episode_steps = 0
         else:
             obs = next_obs
         action = greedy_action(env, model, obs)
         next_obs, reward, done, _ = env.step(action)
+        episode_return += reward
         env.render()
+        episode_steps += 1
 
 
 def main(args):
