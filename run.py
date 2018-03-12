@@ -69,7 +69,7 @@ def create_atari_model(env):
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input], filtered_output)
     optimizer = keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
-    model.compile(optimizer, loss='mse')
+    model.compile(optimizer, loss='logcosh')
     return model
 
 
