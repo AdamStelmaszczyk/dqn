@@ -225,7 +225,7 @@ def view(env, model):
             episode_steps = 0
         else:
             obs = next_obs
-        action = greedy_action(env, model, obs)
+        action = epsilon_greedy_action(env, model, obs, EVAL_EPSILON)
         next_obs, reward, done, _ = env.step(action)
         episode_return += reward
         env.render()
@@ -257,13 +257,15 @@ def main(args):
         env = wrap_deepmind(env)
         play(env)
     else:
-        env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=args.clip_rewards)
         model_filename = args.model or args.view
-        model = load_or_create_model(env_train, model_filename)
         if args.view:
-            view(env_train, model)
+            env_view = wrap_deepmind(env, frame_stack=True, episode_life=False)
+            model = load_or_create_model(env_view, model_filename)
+            view(env_view, model)
         else:
+            env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=args.clip_rewards)
             env_eval = wrap_deepmind(env, frame_stack=True)
+            model = load_or_create_model(env_train, model_filename)
             max_steps = 100 if args.test else MAX_STEPS
             train(env_train, env_eval, model, max_steps)
 
