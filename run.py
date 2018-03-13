@@ -138,7 +138,7 @@ def train(env, env_eval, model, max_steps):
     print('Created {}'.format(logdir))
     steps_after_logging = 0
     loss = -1.0
-    for step in range(1, max_steps):
+    for step in range(1, max_steps + 1):
         try:
             if step % SNAPSHOT_EVERY == 0:
                 save_model(env, model, step)
