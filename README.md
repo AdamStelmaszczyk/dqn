@@ -2,13 +2,28 @@
 
 TensorFlow + Keras implementation of deep Q-learning.
 
+## Hardware
+
+If TensorFlow finds a GPU you will see `Creating TensorFlow device (/device:GPU:0)` in the beginning of log
+and the code will use 1 GPU + 1 CPU. If it doesn't find a GPU, it will use 1 CPU.
+
+Tesla K40 + Intel i5 Haswell gives about 200 steps/s during training. On Haswell alone it's about 100 steps/s.
+
+Training a single game requires 10M training + 5.4M evaluation steps (135k evaluation steps every 250k training steps).
+15.4M steps takes about 21 hours with K40 and 42 hours without.
+
+I'd recommend about 48 GB RAM to safely train.
+`REPLAY_BUFFER_SIZE = 1000000` and stacking 4 frames in the observation already uses 84 \* 84 \* 4 \* 1000000 = 26.3 GB RAM.
+
+
 ## Install
 
 1. Clone this repo: `git clone https://github.com/AdamStelmaszczyk/dqn.git`.
 2. [Install `conda`](https://conda.io/docs/user-guide/install/index.html) for dependency management.
 3. Create `dqn` conda environment: `conda create -n dqn python=3.5.2 -y`.
 4. Activate `dqn` conda environment: `source activate dqn`. All the following commands should be run in the activated `dqn` environment.
-5. Install dependencies: `pip install -r requirements.txt`.
+5. Install basic dependencies: `pip install -r requirements.txt`.
+6. If you wish to use a GPU: `pip install -r requirements-gpu.txt`.
 
 There is an automatic build on Travis which [does the same](https://github.com/AdamStelmaszczyk/dqn/blob/master/.travis.yml).
 
@@ -44,8 +59,6 @@ optional arguments:
 There are 60 games you can choose from:
 
 `AirRaid, Alien, Amidar, Assault, Asterix, Asteroids, Atlantis, BankHeist, BattleZone, BeamRider, Berzerk, Bowling, Boxing, Breakout, Carnival, Centipede, ChopperCommand, CrazyClimber, DemonAttack, DoubleDunk, ElevatorAction, Enduro, FishingDerby, Freeway, Frostbite, Gopher, Gravitar, Hero, IceHockey, Jamesbond, JourneyEscape, Kangaroo, Krull, KungFuMaster, MontezumaRevenge, MsPacman, NameThisGame, Phoenix, Pitfall, Pong, Pooyan, PrivateEye, Qbert, Riverraid, RoadRunner, Robotank, Seaquest, Skiing, Solaris, SpaceInvaders, StarGunner, Tennis, TimePilot, Tutankham, UpNDown, Venture, VideoPinball, WizardOfWor, YarsRevenge, Zaxxon`
-
-Note that REPLAY_BUFFER_SIZE = 1000000 and stacking 4 frames in observation requires at least 84 \* 84 \* 4 \* 1000000 = 26.3 GB RAM for the replay buffer.
 
 ### Play using AI observations
 
