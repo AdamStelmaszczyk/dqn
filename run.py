@@ -5,6 +5,7 @@ import numpy as np
 import psutil
 import pyglet
 import random
+import tensorflow as tf
 import tensorflow.contrib.keras as keras
 
 try:
@@ -240,10 +241,16 @@ def load_or_create_model(env, model_filename):
     return model
 
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.set_random_seed(seed)
+
+
 def main(args):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
-    random.seed(args.seed)
+    set_seed(args.seed)
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
     env.seed(args.seed)
     if args.play:
