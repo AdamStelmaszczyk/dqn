@@ -103,8 +103,8 @@ def epsilon_greedy_action(env, model, observation, epsilon):
     return action
 
 
-def save_model(env, model, step):
-    filename = '{}-{}-{}.h5'.format(env.spec.id, time.strftime("%m-%d-%H-%M"), step)
+def save_model(model, step, name):
+    filename = '{}-{}.h5'.format(name, step)
     model.save(filename)
     print('Saved {}'.format(filename))
 
@@ -128,12 +128,12 @@ def evaluate(env, model):
     return total_episode_reward / episode
 
 
-def train(env, env_eval, model, max_steps):
+def train(env, env_eval, model, max_steps, name):
     target_model = create_atari_model(env)
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
     episode = 0
-    logdir = '{}-{}-log'.format(env.spec.id, time.strftime("%m-%d-%H-%M"))
+    logdir = '{}-log'.format(name)
     board = TensorBoardLogger(logdir)
     print('Created {}'.format(logdir))
     steps_after_logging = 0
@@ -141,7 +141,7 @@ def train(env, env_eval, model, max_steps):
     for step in range(1, max_steps + 1):
         try:
             if step % SNAPSHOT_EVERY == 0:
-                save_model(env, model, step)
+                save_model(model, step, name)
             if done:
                 if episode > 0 and steps_after_logging >= LOG_EVERY:
                     steps_after_logging = 0
@@ -151,17 +151,18 @@ def train(env, env_eval, model, max_steps):
                     steps_per_second = episode_steps / episode_seconds
                     memory = psutil.virtual_memory()
                     to_gb = lambda in_bytes: in_bytes / 1024 / 1024 / 1024
-                    print("episode {} steps {}/{} loss {:.7f} return {} in {:.2f}s {:.1f} steps/s {:.1f}/{:.1f} GB RAM".format(
-                        episode,
-                        episode_steps,
-                        step,
-                        loss,
-                        episode_return,
-                        episode_seconds,
-                        steps_per_second,
-                        to_gb(memory.used),
-                        to_gb(memory.total),
-                    ))
+                    print(
+                        "episode {} steps {}/{} loss {:.7f} return {} in {:.2f}s {:.1f} steps/s {:.1f}/{:.1f} GB RAM".format(
+                            episode,
+                            episode_steps,
+                            step,
+                            loss,
+                            episode_return,
+                            episode_seconds,
+                            steps_per_second,
+                            to_gb(memory.used),
+                            to_gb(memory.total),
+                        ))
                     board.log_scalar('episode_return', episode_return, step)
                     board.log_scalar('episode_steps', episode_steps, step)
                     board.log_scalar('episode_seconds', episode_seconds, step)
@@ -203,7 +204,7 @@ def train(env, env_eval, model, max_steps):
                 board.log_scalar('avg_max_q_value', avg_max_q_value, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
-            save_model(env, model, step)
+            save_model(model, step, name)
             break
 
 
@@ -265,7 +266,7 @@ def main(args):
             view(env_eval, model)
         else:
             max_steps = 100 if args.test else MAX_STEPS
-            train(env_train, env_eval, model, max_steps)
+            train(env_train, env_eval, model, max_steps, args.name)
 
 
 if __name__ == '__main__':
@@ -273,6 +274,7 @@ if __name__ == '__main__':
     parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
     parser.add_argument('--clip_rewards', action='store_true', default=False, help='clip rewards to -1/0/1')
     parser.add_argument('--model', action='store', default=None, help='model filename to load')
+    parser.add_argument('--name', action='store', default=time.strftime("%m-%d-%H-%M"), help='name for saved files')
     parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
     parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
     parser.add_argument('--test', action='store_true', default=False, help='run tests')

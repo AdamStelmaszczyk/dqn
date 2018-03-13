@@ -22,14 +22,15 @@ There is an automatic build on Travis which [does the same](https://github.com/A
 Basic file is `run.py`.
 
 ```
-usage: run.py [-h] [--env ENV] [--clip_rewards] [--model MODEL] [--play]
-              [--seed SEED] [--test] [--view MODEL]
+usage: run.py [-h] [--env ENV] [--clip_rewards] [--model MODEL] [--name NAME]
+              [--play] [--seed SEED] [--test] [--view MODEL]
 
 optional arguments:
   -h, --help      show this help message and exit
   --env ENV       Atari game name (default: Breakout)
   --clip_rewards  clip rewards to -1/0/1 (default: False)
   --model MODEL   model filename to load (default: None)
+  --name NAME     name for saved files (default: 03-13-16-14)
   --play          play with WSAD + Space (default: False)
   --seed SEED     pseudo random number generator seed (default: None)
   --test          run tests (default: False)
