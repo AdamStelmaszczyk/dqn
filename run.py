@@ -46,12 +46,13 @@ def fit_batch(env, model, target_model, batch):
     q_values = rewards + DISCOUNT_FACTOR_GAMMA * np.max(next_q_values, axis=1)
     # Passing the actions as the mask and multiplying the targets by the actions masks.
     one_hot_actions = np.array([one_hot_encode(env, action) for action in actions])
-    model.fit(
+    history = model.fit(
         x=[observations, one_hot_actions],
         y=one_hot_actions * q_values[:, None],
         batch_size=BATCH_SIZE,
         verbose=0,
     )
+    return history.history['loss'][0]
 
 
 def create_atari_model(env):
@@ -128,6 +129,7 @@ def train(env, env_eval, model, max_steps):
     board = TensorBoardLogger(logdir)
     print('Created {}'.format(logdir))
     steps_after_logging = 0
+    loss = -1.0
     for step in range(1, max_steps):
         try:
             if step % SNAPSHOT_EVERY == 0:
@@ -141,10 +143,11 @@ def train(env, env_eval, model, max_steps):
                     steps_per_second = episode_steps / episode_seconds
                     memory = psutil.virtual_memory()
                     to_gb = lambda in_bytes: in_bytes / 1024 / 1024 / 1024
-                    print("episode {} steps {}/{} return {} in {:.2f}s {:.1f} steps/s {:.1f}/{:.1f} GB RAM".format(
+                    print("episode {} steps {}/{} loss {:.7f} return {} in {:.2f}s {:.1f} steps/s {:.1f}/{:.1f} GB RAM".format(
                         episode,
                         episode_steps,
                         step,
+                        loss,
                         episode_return,
                         episode_seconds,
                         steps_per_second,
@@ -157,6 +160,7 @@ def train(env, env_eval, model, max_steps):
                     board.log_scalar('steps_per_second', steps_per_second, step)
                     board.log_scalar('epsilon', epsilon_for_step(step), step)
                     board.log_scalar('memory_used', to_gb(memory.used), step)
+                    board.log_scalar('loss', loss, step)
                 episode_start = time.time()
                 episode_start_step = step
                 obs = env.reset()
@@ -173,7 +177,7 @@ def train(env, env_eval, model, max_steps):
                 if step % TARGET_UPDATE_EVERY == 0:
                     target_model.set_weights(model.get_weights())
                 batch = replay.sample(BATCH_SIZE)
-                fit_batch(env, model, target_model, batch)
+                loss = fit_batch(env, model, target_model, batch)
             if step >= TRAIN_START and step % EVAL_EVERY == 0:
                 average_episode_reward = evaluate(env_eval, model)
                 print('episode {} step {} average_episode_reward {}'.format(episode, step, average_episode_reward))
