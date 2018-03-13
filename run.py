@@ -252,6 +252,7 @@ def main(args):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
     set_seed(args.seed)
+    print(args)
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
     env.seed(args.seed)
     if args.play:
