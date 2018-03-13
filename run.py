@@ -28,6 +28,7 @@ EVAL_EVERY = 250000
 EVAL_STEPS = 135000
 EVAL_EPSILON = 0.05
 LOG_EVERY = 10000
+VALIDATION_SIZE = 500
 
 
 def one_hot_encode(env, action):
@@ -36,10 +37,16 @@ def one_hot_encode(env, action):
     return one_hot
 
 
+def predict(env, model, observations):
+    frames_input = np.array(observations)
+    actions_input = np.ones((len(observations), env.action_space.n))
+    return model.predict([frames_input, actions_input])
+
+
 def fit_batch(env, model, target_model, batch):
     observations, actions, rewards, next_observations, dones = batch
     # Predict the Q values of the next states. Passing ones as the action mask.
-    next_q_values = target_model.predict([next_observations, np.ones((BATCH_SIZE, env.action_space.n))])
+    next_q_values = predict(env, target_model, next_observations)
     # The Q values of terminal states is 0 by definition.
     next_q_values[dones] = 0.0
     # The Q values of each start state is the reward + gamma * the max next state Q value
@@ -83,7 +90,7 @@ def epsilon_for_step(step):
 
 
 def greedy_action(env, model, observation):
-    next_q_values = model.predict([np.array([observation]), np.ones((1, env.action_space.n))])
+    next_q_values = predict(env, model, observations=[observation])
     return np.argmax(next_q_values)
 
 
@@ -178,10 +185,21 @@ def train(env, env_eval, model, max_steps):
                     target_model.set_weights(model.get_weights())
                 batch = replay.sample(BATCH_SIZE)
                 loss = fit_batch(env, model, target_model, batch)
+            if step == TRAIN_START:
+                validation_obs, _, _, _, _ = replay.sample(VALIDATION_SIZE)
             if step >= TRAIN_START and step % EVAL_EVERY == 0:
-                average_episode_reward = evaluate(env_eval, model)
-                print('episode {} step {} average_episode_reward {}'.format(episode, step, average_episode_reward))
-                board.log_scalar('average_episode_reward', average_episode_reward, step)
+                avg_episode_reward = evaluate(env_eval, model)
+                q_values = predict(env, model, validation_obs)
+                max_q_values = np.max(q_values, axis=1)
+                avg_max_q_value = np.mean(max_q_values)
+                print('episode {} step {} avg_episode_reward {:.1f} avg_max_q_value {:.1f}'.format(
+                    episode,
+                    step,
+                    avg_episode_reward,
+                    avg_max_q_value,
+                ))
+                board.log_scalar('avg_episode_reward', avg_episode_reward, step)
+                board.log_scalar('avg_max_q_value', avg_max_q_value, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
             save_model(env, model, step)
