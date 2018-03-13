@@ -257,7 +257,7 @@ def main(args):
         env = wrap_deepmind(env)
         play(env)
     else:
-        env_train = wrap_deepmind(env, frame_stack=True, episode_life=True)
+        env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=args.clip_rewards)
         model_filename = args.model or args.view
         model = load_or_create_model(env_train, model_filename)
         if args.view:
@@ -271,6 +271,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
+    parser.add_argument('--clip_rewards', action='store_true', default=False, help='clip rewards to -1/0/1')
     parser.add_argument('--model', action='store', default=None, help='model filename to load')
     parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
     parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
