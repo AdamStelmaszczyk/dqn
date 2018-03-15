@@ -82,3 +82,4 @@ Keys:
 - https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
 - https://github.com/openai/gym/blob/master/gym/envs/__init__.py#L483
 - https://github.com/kuz/DeepMind-Atari-Deep-Q-Learner
+- https://medium.com/mlreview/speeding-up-dqn-on-pytorch-solving-pong-in-30-minutes-81a1bd2dff55

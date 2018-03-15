@@ -18,16 +18,19 @@ from replay_buffer import ReplayBuffer
 from tensor_board_logger import TensorBoardLogger
 
 DISCOUNT_FACTOR_GAMMA = 0.99
+LEARNING_RATE = 0.0001
 UPDATE_EVERY = 4
-TARGET_UPDATE_EVERY = 10000
-BATCH_SIZE = 32
-TRAIN_START = 50000
-REPLAY_BUFFER_SIZE = 1000000
+BATCH_SIZE = 128
+TARGET_UPDATE_EVERY = 1000
+TRAIN_START = 10000
+REPLAY_BUFFER_SIZE = 100000
 MAX_STEPS = 10000000
 SNAPSHOT_EVERY = 1000000
-EVAL_EVERY = 250000
-EVAL_STEPS = 135000
-EVAL_EPSILON = 0.05
+EVAL_EVERY = 100000
+EVAL_STEPS = 10000
+EPSILON_START = 1.0
+EPSILON_FINAL = 0.02
+EPSILON_STEPS = 100000
 LOG_EVERY = 10000
 VALIDATION_SIZE = 500
 
@@ -80,14 +83,13 @@ def create_atari_model(env):
     output = keras.layers.Dense(n_actions)(hidden)
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input], filtered_output)
-    optimizer = keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    optimizer = keras.optimizers.Adam(lr=LEARNING_RATE)
     model.compile(optimizer, loss='logcosh')
     return model
 
 
 def epsilon_for_step(step):
-    # epsilon annealed linearly from 1 to 0.1 over first million of steps and fixed at 0.1 thereafter
-    return max(-9e-7 * step + 1, 0.1)
+    return max(EPSILON_FINAL, (EPSILON_FINAL - EPSILON_START) / EPSILON_STEPS * step + EPSILON_START)
 
 
 def greedy_action(env, model, observation):
@@ -122,7 +124,7 @@ def evaluate(env, model):
             episode_return = 0.0
         else:
             obs = next_obs
-        action = epsilon_greedy_action(env, model, obs, EVAL_EPSILON)
+        action = epsilon_greedy_action(env, model, obs, EPSILON_FINAL)
         next_obs, reward, done, _ = env.step(action)
         episode_return += reward
     return total_episode_reward / episode
@@ -226,7 +228,7 @@ def view(env, model):
             episode_steps = 0
         else:
             obs = next_obs
-        action = epsilon_greedy_action(env, model, obs, EVAL_EPSILON)
+        action = epsilon_greedy_action(env, model, obs, EPSILON_FINAL)
         next_obs, reward, done, _ = env.step(action)
         episode_return += reward
         env.render()
@@ -242,19 +244,19 @@ def load_or_create_model(env, model_filename):
     return model
 
 
-def set_seed(seed):
+def set_seed(env, seed):
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
+    env.seed(seed)
 
 
 def main(args):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
-    set_seed(args.seed)
     print(args)
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
-    env.seed(args.seed)
+    set_seed(env, args.seed)
     if args.play:
         env = wrap_deepmind(env)
         play(env)
