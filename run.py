@@ -112,22 +112,34 @@ def save_model(model, step, name):
     print('Saved {}'.format(filename))
 
 
-def evaluate(env, model):
+def evaluate(env, model, view=False, eval_steps=EVAL_STEPS):
     done = True
-    total_episode_reward = 0.0
     episode = 0
     episode_return = 0.0
-    for i in range(1, EVAL_STEPS):
+    total_episode_reward = 0.0
+    for i in range(1, eval_steps):
         if done:
+            if episode > 0:
+                print("episode {} steps {} return {}".format(
+                    episode,
+                    episode_steps,
+                    episode_return,
+                ))
             obs = env.reset()
             total_episode_reward += episode_return
             episode += 1
             episode_return = 0.0
+            episode_steps = 0
+            if view:
+                env.render()
         else:
             obs = next_obs
         action = epsilon_greedy_action(env, model, obs, EPSILON_FINAL)
         next_obs, reward, done, _ = env.step(action)
         episode_return += reward
+        episode_steps += 1
+        if view:
+            env.render()
     return total_episode_reward / episode
 
 
@@ -211,31 +223,6 @@ def train(env, env_eval, model, max_steps, name):
             break
 
 
-def view(env, model):
-    done = True
-    episode = 0
-    while True:
-        if done:
-            if episode > 0:
-                print("episode {} steps {} return {}".format(
-                    episode,
-                    episode_steps,
-                    episode_return,
-                ))
-            obs = env.reset()
-            env.render()
-            episode += 1
-            episode_return = 0.0
-            episode_steps = 0
-        else:
-            obs = next_obs
-        action = epsilon_greedy_action(env, model, obs, EPSILON_FINAL)
-        next_obs, reward, done, _ = env.step(action)
-        episode_return += reward
-        env.render()
-        episode_steps += 1
-
-
 def load_or_create_model(env, model_filename):
     if model_filename:
         model = keras.models.load_model(model_filename)
@@ -267,7 +254,7 @@ def main(args):
         model_filename = args.model or args.view
         model = load_or_create_model(env_train, model_filename)
         if args.view:
-            view(env_eval, model)
+            evaluate(env_eval, model, view=True)
         else:
             max_steps = 100 if args.test else MAX_STEPS
             train(env_train, env_eval, model, max_steps, args.name)
