@@ -25,7 +25,7 @@ TARGET_UPDATE_EVERY = 1000
 TRAIN_START = 10000
 REPLAY_BUFFER_SIZE = 100000
 MAX_STEPS = 10000000
-SNAPSHOT_EVERY = 1000000
+SNAPSHOT_EVERY = 500000
 EVAL_EVERY = 100000
 EVAL_STEPS = 10000
 EPSILON_START = 1.0
@@ -76,10 +76,11 @@ def create_atari_model(env):
     actions_input = keras.layers.Input((n_actions,), name='actions_input')
     # Assuming that the input frames are still encoded from 0 to 255. Transforming to [0, 1].
     normalized = keras.layers.Lambda(lambda x: x / 255.0)(frames_input)
-    conv_1 = keras.layers.Conv2D(filters=16, kernel_size=8, strides=4, activation='relu')(normalized)
-    conv_2 = keras.layers.Conv2D(filters=32, kernel_size=4, strides=2, activation='relu')(conv_1)
-    conv_flattened = keras.layers.Flatten()(conv_2)
-    hidden = keras.layers.Dense(256, activation='relu')(conv_flattened)
+    conv_1 = keras.layers.Conv2D(filters=32, kernel_size=8, strides=4, activation='relu')(normalized)
+    conv_2 = keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')(conv_1)
+    conv_3 = keras.layers.Conv2D(filters=64, kernel_size=3, strides=1, activation='relu')(conv_2)
+    conv_flattened = keras.layers.Flatten()(conv_3)
+    hidden = keras.layers.Dense(512, activation='relu')(conv_flattened)
     output = keras.layers.Dense(n_actions)(hidden)
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input], filtered_output)
