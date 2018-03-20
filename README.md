@@ -10,7 +10,7 @@ and the code will use 1 GPU + 1 CPU. If it doesn't find a GPU, it will use 1 CPU
 Tesla K40 + Intel i5 Haswell give about 80 steps/s during training.
 
 Training a single game requires 1M training + 200k evaluation steps (20k evaluation steps every 100k training steps).
-1.2M steps takes about 4 hours with K40.
+1.2M steps takes about 3.5 hours with K40.
 
 I'd recommend about 10 GB of RAM to safely train.
 REPLAY_BUFFER_SIZE = 100000 and stacking 4 frames in the observation already uses 84 \* 84 \* 4 \* 100000 = 2.6 GB RAM.
