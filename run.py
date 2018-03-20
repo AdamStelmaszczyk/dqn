@@ -288,7 +288,7 @@ def main(args):
         env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=True)
         env_eval = wrap_deepmind(env, frame_stack=True)
         model = load_or_create_model(env_train, args.model)
-        if args.view or args.images:
+        if args.view or args.images or args.eval:
             evaluate(env_eval, model, args.view, args.images)
         else:
             max_steps = 100 if args.test else MAX_STEPS
@@ -298,6 +298,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
+    parser.add_argument('--eval', action='store_true', default=False, help='run evaluation with log only')
     parser.add_argument('--images', action='store_true', default=False, help='save images during evaluation')
     parser.add_argument('--model', action='store', default=None, help='model filename to load')
     parser.add_argument('--name', action='store', default=time.strftime("%m-%d-%H-%M"), help='name for saved files')
