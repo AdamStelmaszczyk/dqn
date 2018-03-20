@@ -37,20 +37,19 @@ There is an automatic build on Travis which [does the same](https://github.com/A
 Basic file is `run.py`.
 
 ```
-usage: run.py [-h] [--env ENV] [--clip_rewards] [--model MODEL] [--name NAME]
-              [--play] [--seed SEED] [--test] [--view MODEL]
+usage: run.py [-h] [--env ENV] [--images] [--model MODEL] [--name NAME]
+              [--play] [--seed SEED] [--test] [--view]
 
 optional arguments:
-  -h, --help      show this help message and exit
-  --env ENV       Atari game name (default: Breakout)
-  --clip_rewards  clip rewards to -1/0/1 (default: False)
-  --images        save images during --view (default: False)
-  --model MODEL   model filename to load (default: None)
-  --name NAME     name for saved files (default: 03-20-17-32)
-  --play          play with WSAD + Space (default: False)
-  --seed SEED     pseudo random number generator seed (default: None)
-  --test          run tests (default: False)
-  --view          view the gameplay in a window (default: False)
+  -h, --help     show this help message and exit
+  --env ENV      Atari game name (default: Breakout)
+  --images       save images during evaluation (default: False)
+  --model MODEL  model filename to load (default: None)
+  --name NAME    name for saved files (default: 03-20-19-55)
+  --play         play with WSAD + Space (default: False)
+  --seed SEED    pseudo random number generator seed (default: None)
+  --test         run tests (default: False)
+  --view         view the evaluation in a window (default: False)
 ```
 
 ### Train
