@@ -21,7 +21,7 @@ from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
 from tensor_board_logger import TensorBoardLogger
 
-DISCOUNT_FACTOR_GAMMA = 0.99
+DISCOUNT_FACTOR_GAMMA = 0.999
 LEARNING_RATE = 0.00025
 UPDATE_EVERY = 4
 BATCH_SIZE = 128
