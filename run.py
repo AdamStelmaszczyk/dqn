@@ -22,7 +22,7 @@ from replay_buffer import ReplayBuffer
 from tensor_board_logger import TensorBoardLogger
 
 DISCOUNT_FACTOR_GAMMA = 0.99
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.00025
 UPDATE_EVERY = 4
 BATCH_SIZE = 128
 TARGET_UPDATE_EVERY = 1000
