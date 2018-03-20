@@ -77,7 +77,7 @@ Keys:
 
 1. Generate images: `python run.py --images --model=YOUR_MODEL.h5`.
 2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
-3. Convert images from episode 1 to GIF: `convert -layers OptimizeFrame 1_*.png 1.gif`
+3. Convert images from episode 1 to GIF: `convert -layers optimize-frame 1_*.png 1.gif`
 
 
 ## Links
