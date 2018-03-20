@@ -79,6 +79,11 @@ Keys:
 2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
 3. Convert images from episode 1 to GIF: `convert -layers optimize-frame 1_*.png 1.gif`
 
+## Best scores after 1M training steps
+
+### Pong: 21
+
+<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/pong.gif"/>
 
 ## Links
 
