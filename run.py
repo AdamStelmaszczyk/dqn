@@ -84,7 +84,7 @@ def create_atari_model(env):
     output = keras.layers.Dense(n_actions)(hidden)
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input], filtered_output)
-    optimizer = keras.optimizers.Adam(lr=LEARNING_RATE)
+    optimizer = keras.optimizers.Adam(lr=LEARNING_RATE, clipnorm=1.0)
     model.compile(optimizer, loss='logcosh')
     return model
 
