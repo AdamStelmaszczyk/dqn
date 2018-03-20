@@ -75,7 +75,7 @@ Keys:
 
 ### Generate GIFs
 
-1. Generate images: `python run.py --images --model=YOUR_MODEL.h5`.
+1. Generate images: `python run.py --images --model=PONG_MODEL.h5 --env Pong`.
 2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
 3. Convert images from episode 1 to GIF: `convert -layers optimize-frame 1_*.png 1.gif`
 
