@@ -110,8 +110,8 @@ def epsilon_greedy_action(env, model, observation, epsilon):
     return action
 
 
-def save_model(model, step, name):
-    filename = '{}-{}.h5'.format(name, step)
+def save_model(model, step, logdir, name):
+    filename = '{}/{}-{}.h5'.format(logdir, name, step)
     model.save(filename)
     print('Saved {}'.format(filename))
 
@@ -176,7 +176,7 @@ def train(env, env_eval, model, max_steps, name):
     for step in range(1, max_steps + 1):
         try:
             if step % SNAPSHOT_EVERY == 0:
-                save_model(model, step, name)
+                save_model(model, step, logdir, name)
             if done:
                 if episode > 0 and steps_after_logging >= LOG_EVERY:
                     steps_after_logging = 0
@@ -255,7 +255,7 @@ def train(env, env_eval, model, max_steps, name):
                 board.log_scalar('avg_max_q_value', avg_max_q_value, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
-            save_model(model, step, name)
+            save_model(model, step, logdir, name)
             break
 
 
