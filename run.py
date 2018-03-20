@@ -1,17 +1,21 @@
 import time
 
 import argparse
+import cv2
 import numpy as np
 import psutil
-import pyglet
 import random
 import tensorflow as tf
 import tensorflow.contrib.keras as keras
+import traceback
 
 try:
     from gym.utils.play import play
-except pyglet.canvas.xlib.NoSuchDisplayException:
-    print("No X server running on $DISPLAY, so interactive --play won't work.")
+except Exception as e:
+    print("The following exception is typical for servers because they don't have display stuff installed. "
+          "It only means that interactive --play won't work because `from gym.utils.play import play` failed with:")
+    traceback.print_exc()
+    print("You probably don't need --play on server, so let's continue.")
 
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
@@ -112,13 +116,20 @@ def save_model(model, step, name):
     print('Saved {}'.format(filename))
 
 
-def evaluate(env, model, view=False, eval_steps=EVAL_STEPS):
+def save_image(env, episode, step):
+    frame = env.render(mode='rgb_array')
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)  # following cv2.imwrite assumes BGR
+    filename = "{}_{:06d}.png".format(episode, step)
+    cv2.imwrite(filename, frame, params=[cv2.IMWRITE_PNG_COMPRESSION, 9])
+
+
+def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
     done = True
     episode = 0
     episode_return_sum = 0.0
     episode_return_min = float('inf')
     episode_return_max = float('-inf')
-    for i in range(1, eval_steps):
+    for step in range(1, eval_steps):
         if done:
             if episode > 0:
                 print("eval episode {} steps {} return {}".format(
@@ -135,6 +146,8 @@ def evaluate(env, model, view=False, eval_steps=EVAL_STEPS):
             episode_steps = 0
             if view:
                 env.render()
+            if images:
+                save_image(env, episode, step)
         else:
             obs = next_obs
         action = epsilon_greedy_action(env, model, obs, EPSILON_FINAL)
@@ -143,6 +156,8 @@ def evaluate(env, model, view=False, eval_steps=EVAL_STEPS):
         episode_steps += 1
         if view:
             env.render()
+        if images:
+            save_image(env, episode, step)
     assert episode > 0
     episode_return_avg = episode_return_sum / episode
     return episode_return_avg, episode_return_min, episode_return_max
@@ -272,10 +287,9 @@ def main(args):
     else:
         env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=args.clip_rewards)
         env_eval = wrap_deepmind(env, frame_stack=True)
-        model_filename = args.model or args.view
-        model = load_or_create_model(env_train, model_filename)
-        if args.view:
-            evaluate(env_eval, model, view=True)
+        model = load_or_create_model(env_train, args.model)
+        if args.view or args.images:
+            evaluate(env_eval, model, args.view, args.images)
         else:
             max_steps = 100 if args.test else MAX_STEPS
             train(env_train, env_eval, model, max_steps, args.name)
@@ -285,10 +299,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
     parser.add_argument('--clip_rewards', action='store_true', default=False, help='clip rewards to -1/0/1')
+    parser.add_argument('--images', action='store_true', default=False, help='save images during --view')
     parser.add_argument('--model', action='store', default=None, help='model filename to load')
     parser.add_argument('--name', action='store', default=time.strftime("%m-%d-%H-%M"), help='name for saved files')
     parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
     parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
     parser.add_argument('--test', action='store_true', default=False, help='run tests')
-    parser.add_argument('--view', action='store', metavar='MODEL', default=None, help='view the model playing the game')
+    parser.add_argument('--view', action='store_true', default=False, help='view the gameplay in a window')
     main(parser.parse_args())

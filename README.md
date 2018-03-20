@@ -44,12 +44,13 @@ optional arguments:
   -h, --help      show this help message and exit
   --env ENV       Atari game name (default: Breakout)
   --clip_rewards  clip rewards to -1/0/1 (default: False)
+  --images        save images during --view (default: False)
   --model MODEL   model filename to load (default: None)
-  --name NAME     name for saved files (default: 03-13-16-14)
+  --name NAME     name for saved files (default: 03-20-17-32)
   --play          play with WSAD + Space (default: False)
   --seed SEED     pseudo random number generator seed (default: None)
   --test          run tests (default: False)
-  --view MODEL    view the model playing the game (default: None)
+  --view          view the gameplay in a window (default: False)
 ```
 
 ### Train
@@ -71,6 +72,13 @@ Keys:
 - <kbd>A</kbd> - left
 - <kbd>D</kbd> - right
 - <kbd>SPACE</kbd> - fire button (concrete action depends on a game)
+
+### Generate GIFs
+
+1. Generate images: `python run.py --images --model=YOUR_MODEL.h5`.
+2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
+3. Convert images from episode 1 to GIF: `convert -layers OptimizeFrame 1_*.png 1.gif`
+
 
 ## Links
 
