@@ -27,7 +27,7 @@ REPLAY_BUFFER_SIZE = 100000
 MAX_STEPS = 10000000
 SNAPSHOT_EVERY = 500000
 EVAL_EVERY = 100000
-EVAL_STEPS = 10000
+EVAL_STEPS = 20000
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.02
 EPSILON_STEPS = 100000
@@ -115,18 +115,21 @@ def save_model(model, step, name):
 def evaluate(env, model, view=False, eval_steps=EVAL_STEPS):
     done = True
     episode = 0
-    episode_return = 0.0
-    total_episode_reward = 0.0
+    episode_return_sum = 0.0
+    episode_return_min = float('inf')
+    episode_return_max = float('-inf')
     for i in range(1, eval_steps):
         if done:
             if episode > 0:
-                print("episode {} steps {} return {}".format(
+                print("eval episode {} steps {} return {}".format(
                     episode,
                     episode_steps,
                     episode_return,
                 ))
+                episode_return_sum += episode_return
+                episode_return_min = min(episode_return_min, episode_return)
+                episode_return_max = max(episode_return_max, episode_return)
             obs = env.reset()
-            total_episode_reward += episode_return
             episode += 1
             episode_return = 0.0
             episode_steps = 0
@@ -140,7 +143,9 @@ def evaluate(env, model, view=False, eval_steps=EVAL_STEPS):
         episode_steps += 1
         if view:
             env.render()
-    return total_episode_reward / episode
+    assert episode > 0
+    episode_return_avg = episode_return_sum / episode
+    return episode_return_avg, episode_return_min, episode_return_max
 
 
 def train(env, env_eval, model, max_steps, name):
@@ -167,7 +172,13 @@ def train(env, env_eval, model, max_steps, name):
                     memory = psutil.virtual_memory()
                     to_gb = lambda in_bytes: in_bytes / 1024 / 1024 / 1024
                     print(
-                        "episode {} steps {}/{} loss {:.7f} return {} in {:.2f}s {:.1f} steps/s {:.1f}/{:.1f} GB RAM".format(
+                        "episode {} "
+                        "steps {}/{} "
+                        "loss {:.7f} "
+                        "return {} "
+                        "in {:.2f}s "
+                        "{:.1f} steps/s "
+                        "{:.1f}/{:.1f} GB RAM".format(
                             episode,
                             episode_steps,
                             step,
@@ -205,17 +216,27 @@ def train(env, env_eval, model, max_steps, name):
             if step == TRAIN_START:
                 validation_obs, _, _, _, _ = replay.sample(VALIDATION_SIZE)
             if step >= TRAIN_START and step % EVAL_EVERY == 0:
-                avg_episode_reward = evaluate(env_eval, model)
+                episode_return_avg, episode_return_min, episode_return_max = evaluate(env_eval, model)
                 q_values = predict(env, model, validation_obs)
                 max_q_values = np.max(q_values, axis=1)
                 avg_max_q_value = np.mean(max_q_values)
-                print('episode {} step {} avg_episode_reward {:.1f} avg_max_q_value {:.1f}'.format(
-                    episode,
-                    step,
-                    avg_episode_reward,
-                    avg_max_q_value,
-                ))
-                board.log_scalar('avg_episode_reward', avg_episode_reward, step)
+                print(
+                    "episode {} "
+                    "step {} "
+                    "episode_return_avg {:.1f} "
+                    "episode_return_min {:.1f} "
+                    "episode_return_max {:.1f} "
+                    "avg_max_q_value {:.1f}".format(
+                        episode,
+                        step,
+                        episode_return_avg,
+                        episode_return_min,
+                        episode_return_max,
+                        avg_max_q_value,
+                    ))
+                board.log_scalar('episode_return_avg', episode_return_avg, step)
+                board.log_scalar('episode_return_min', episode_return_min, step)
+                board.log_scalar('episode_return_max', episode_return_max, step)
                 board.log_scalar('avg_max_q_value', avg_max_q_value, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
