@@ -216,9 +216,9 @@ def train(env, env_eval, model, max_steps, name):
                 obs = env.reset()
                 episode += 1
                 episode_return = 0.0
+                epsilon = epsilon_for_step(step)
             else:
                 obs = next_obs
-            epsilon = epsilon_for_step(step)
             action = epsilon_greedy_action(env, model, obs, epsilon)
             next_obs, reward, done, _ = env.step(action)
             episode_return += reward
