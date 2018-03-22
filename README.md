@@ -8,9 +8,7 @@ If TensorFlow finds a GPU you will see `Creating TensorFlow device (/device:GPU:
 and the code will use 1 GPU + 1 CPU. If it doesn't find a GPU, it will use 1 CPU.
 
 Tesla K40 + Intel i5 Haswell give about 80 steps/s during training.
-
-Training a single game requires 1M training + 200k evaluation steps (20k evaluation steps every 100k training steps).
-1.2M steps takes about 3.5 hours with K40.
+1M training + 200k evaluation steps (20k evaluation steps every 100k training steps) takes about 3.5 hours with K40.
 
 I'd recommend about 10 GB of RAM to safely train.
 REPLAY_BUFFER_SIZE = 100000 and stacking 4 frames in the observation already uses 84 \* 84 \* 4 \* 100000 = 2.6 GB RAM.
@@ -79,11 +77,15 @@ Keys:
 2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
 3. Convert images from episode 1 to GIF: `convert -layers optimize-frame 1_*.png 1.gif`
 
-## Best scores after 1M training steps
+## Best scores after 2M training steps
 
 ### Pong: 21
 
-<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/pong.gif"/>
+<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/pong_21.gif"/>
+
+### Breakout: 419
+
+<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/breakout_419.gif"/>
 
 ## Links
 
