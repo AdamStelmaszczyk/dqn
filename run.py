@@ -37,6 +37,7 @@ EPSILON_FINAL = 0.02
 EPSILON_STEPS = 100000
 LOG_EVERY = 10000
 VALIDATION_SIZE = 500
+MAX_PREDICTED_Q_VALUE = 1000000
 
 
 def one_hot_encode(env, action):
@@ -70,6 +71,11 @@ def fit_batch(env, model, target_model, batch):
     return history.history['loss'][0]
 
 
+def clipped_logcosh(y_true, y_pred):
+    y_pred = tf.clip_by_value(y_pred, -MAX_PREDICTED_Q_VALUE, MAX_PREDICTED_Q_VALUE)
+    return tf.keras.losses.logcosh(y_true, y_pred)
+
+
 def create_atari_model(env):
     n_actions = env.action_space.n
     obs_shape = env.observation_space.shape
@@ -89,7 +95,7 @@ def create_atari_model(env):
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input], filtered_output)
     optimizer = keras.optimizers.Adam(lr=LEARNING_RATE, clipnorm=1.0)
-    model.compile(optimizer, loss='logcosh')
+    model.compile(optimizer, loss=clipped_logcosh)
     return model
 
 
