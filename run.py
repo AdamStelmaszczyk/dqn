@@ -1,4 +1,5 @@
 import time
+from math import isnan
 
 import argparse
 import cv2
@@ -67,7 +68,10 @@ def fit_batch(env, model, target_model, batch):
         batch_size=BATCH_SIZE,
         verbose=0,
     )
-    return history.history['loss'][0]
+    loss = history.history['loss'][0]
+    if isnan(loss):
+        print('predicted q_values {}'.format(one_hot_actions * q_values[:, None]))
+    return loss
 
 
 def create_atari_model(env):
