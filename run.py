@@ -118,6 +118,7 @@ def save_model(model, step, logdir, name):
     filename = '{}/{}-{}.h5'.format(logdir, name, step)
     model.save(filename)
     print('Saved {}'.format(filename))
+    return filename
 
 
 def save_image(env, episode, step):
@@ -297,6 +298,9 @@ def main(args):
         else:
             max_steps = 100 if args.test else MAX_STEPS
             train(env_train, env_eval, model, max_steps, args.name)
+            if args.test:
+                filename = save_model(model, EVAL_STEPS, logdir='.', name='test')
+                load_or_create_model(env_train, filename)
 
 
 if __name__ == '__main__':
