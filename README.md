@@ -77,15 +77,19 @@ Keys:
 2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
 3. Convert images from episode 1 to GIF: `convert -layers optimize-frame 1_*.png 1.gif`
 
-## Best scores after 2M training steps
+## Best scores observed using the same hyperparameters as in the code
 
-### Pong: 21
-
+### Pong: 21 after 1M steps
 <img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/pong_21.gif"/>
 
-### Breakout: 419
-
+### Breakout: 419 after 2M steps
 <img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/breakout_419.gif"/>
+
+### SpaceInvaders: 815 after 4M steps
+<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/space_815.gif"/>
+
+### Seaquest: 8040 after 6.5M steps
+<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/seaquest_8040.gif"/>
 
 ## Links
 
