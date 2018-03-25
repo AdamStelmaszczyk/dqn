@@ -1,15 +1,17 @@
+import sys
 import time
 from math import isnan
 
-import argparse
 import cv2
+import deepsense.neptune as neptune
 import numpy as np
 import psutil
 import random
-import sys
 import tensorflow as tf
 import tensorflow.contrib.keras as keras
 import traceback
+
+from loggers import TensorBoardLogger, NeptuneLogger, AggregatedLogger
 
 try:
     from gym.utils.play import play
@@ -21,7 +23,6 @@ except Exception as e:
 
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
-from tensor_board_logger import TensorBoardLogger
 
 DISCOUNT_FACTOR_GAMMA = 0.99
 LEARNING_RATE = 0.0001
@@ -172,14 +173,11 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
     return episode_return_avg, episode_return_min, episode_return_max
 
 
-def train(env, env_eval, model, max_steps, name):
+def train(env, env_eval, model, max_steps, name, logdir, logger):
     target_model = create_atari_model(env)
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
     episode = 0
-    logdir = '{}-log'.format(name)
-    board = TensorBoardLogger(logdir)
-    print('Created {}'.format(logdir))
     steps_after_logging = 0
     loss = 0.0
     for step in range(1, max_steps + 1):
@@ -213,13 +211,13 @@ def train(env, env_eval, model, max_steps, name):
                             to_gb(memory.used),
                             to_gb(memory.total),
                         ))
-                    board.log_scalar('episode_return', episode_return, step)
-                    board.log_scalar('episode_steps', episode_steps, step)
-                    board.log_scalar('episode_seconds', episode_seconds, step)
-                    board.log_scalar('steps_per_second', steps_per_second, step)
-                    board.log_scalar('epsilon', epsilon_for_step(step), step)
-                    board.log_scalar('memory_used', to_gb(memory.used), step)
-                    board.log_scalar('loss', loss, step)
+                    logger.log_scalar('episode_return', episode_return, step)
+                    logger.log_scalar('episode_steps', episode_steps, step)
+                    logger.log_scalar('episode_seconds', episode_seconds, step)
+                    logger.log_scalar('steps_per_second', steps_per_second, step)
+                    logger.log_scalar('epsilon', epsilon_for_step(step), step)
+                    logger.log_scalar('memory_used', to_gb(memory.used), step)
+                    logger.log_scalar('loss', loss, step)
                 episode_start = time.time()
                 episode_start_step = step
                 obs = env.reset()
@@ -258,10 +256,10 @@ def train(env, env_eval, model, max_steps, name):
                         episode_return_max,
                         avg_max_q_value,
                     ))
-                board.log_scalar('episode_return_avg', episode_return_avg, step)
-                board.log_scalar('episode_return_min', episode_return_min, step)
-                board.log_scalar('episode_return_max', episode_return_max, step)
-                board.log_scalar('avg_max_q_value', avg_max_q_value, step)
+                logger.log_scalar('episode_return_avg', episode_return_avg, step)
+                logger.log_scalar('episode_return_min', episode_return_min, step)
+                logger.log_scalar('episode_return_max', episode_return_max, step)
+                logger.log_scalar('avg_max_q_value', avg_max_q_value, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
             save_model(model, step, logdir, name)
@@ -284,10 +282,21 @@ def set_seed(env, seed):
     env.seed(seed)
 
 
-def main(args):
+def fix_neptune_args(args):
+    '''
+    neptune run --offline gives 'None' as a default value for string parameters instead of None.
+    '''
+    for arg in args:
+        if args[arg] == 'None':
+            args[arg] = None
+    return args
+
+
+def main(context):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
-    print(args)
+    args = fix_neptune_args(context.params)
+    print('args: {}'.format({arg: args[arg] for arg in args}))
     env = make_atari('{}NoFrameskip-v4'.format(args.env))
     set_seed(env, args.seed)
     if args.play:
@@ -301,21 +310,17 @@ def main(args):
             evaluate(env_eval, model, args.view, args.images)
         else:
             max_steps = 100 if args.test else MAX_STEPS
-            train(env_train, env_eval, model, max_steps, args.name)
+            logdir = '{}-log'.format(context.params.name)
+            board = TensorBoardLogger(logdir)
+            print('Created {}'.format(logdir))
+            neptune = NeptuneLogger(context)
+            logger = AggregatedLogger([board, neptune])
+            train(env_train, env_eval, model, max_steps, args.name, logdir, logger)
             if args.test:
                 filename = save_model(model, EVAL_STEPS, logdir='.', name='test')
                 load_or_create_model(env_train, filename)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
-    parser.add_argument('--eval', action='store_true', default=False, help='run evaluation with log only')
-    parser.add_argument('--images', action='store_true', default=False, help='save images during evaluation')
-    parser.add_argument('--model', action='store', default=None, help='model filename to load')
-    parser.add_argument('--name', action='store', default=time.strftime("%m-%d-%H-%M"), help='name for saved files')
-    parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
-    parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
-    parser.add_argument('--test', action='store_true', default=False, help='run tests')
-    parser.add_argument('--view', action='store_true', default=False, help='view evaluation in a window')
-    main(parser.parse_args())
+    context = neptune.Context()
+    main(context)
