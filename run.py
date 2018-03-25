@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import psutil
 import random
+import sys
 import tensorflow as tf
 import tensorflow.contrib.keras as keras
 import traceback
@@ -70,7 +71,10 @@ def fit_batch(env, model, target_model, batch):
     )
     loss = history.history['loss'][0]
     if isnan(loss):
+        print('observations {}'.format(np.array2string(observations, threshold=10000000)))
+        print('one_hot_actions {}'.format(np.array2string(one_hot_actions, threshold=10000000)))
         print('predicted q_values {}'.format(one_hot_actions * q_values[:, None]))
+        sys.exit(1)
     return loss
 
 
