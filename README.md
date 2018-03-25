@@ -88,6 +88,9 @@ Keys:
 ### SpaceInvaders: 815 after 4M steps
 <img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/space_815.gif"/>
 
+### BeamRider: 7111 after 5.5M steps
+<img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/beam_7111.gif"/>
+
 ### Seaquest: 8040 after 6.5M steps
 <img src="https://github.com/AdamStelmaszczyk/dqn/blob/master/gifs/seaquest_8040.gif"/>
 
