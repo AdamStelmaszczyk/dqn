@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/AdamStelmaszczyk/dqn.svg?branch=master)](https://travis-ci.org/AdamStelmaszczyk/dqn)
 
-TensorFlow + Keras implementation of deep Q-learning.
+TensorFlow & Keras implementation of DQN with HER (Hindsight Experience Replay)
 
 ## Hardware
 
@@ -88,3 +88,4 @@ Keys:
 - https://github.com/openai/gym/blob/master/gym/envs/__init__.py#L483
 - https://github.com/kuz/DeepMind-Atari-Deep-Q-Learner
 - https://medium.com/mlreview/speeding-up-dqn-on-pytorch-solving-pong-in-30-minutes-81a1bd2dff55
+- https://arxiv.org/pdf/1707.01495.pdf
