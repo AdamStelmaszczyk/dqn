@@ -73,9 +73,7 @@ def fit_batch(env, model, target_model, batch):
     )
     loss = history.history['loss'][0]
     if isnan(loss):
-        print('observations {}'.format(np.array2string(observations, threshold=10000000)))
-        print('one_hot_actions {}'.format(np.array2string(one_hot_actions, threshold=10000000)))
-        print('predicted q_values {}'.format(one_hot_actions * q_values[:, None]))
+        print('predicted q_values {}'.format(np.array2string(one_hot_actions * q_values[:, None], threshold=10000000)))
         sys.exit(1)
     return loss
 
