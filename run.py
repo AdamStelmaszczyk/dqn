@@ -48,16 +48,17 @@ def one_hot_encode(env, action):
     return one_hot
 
 
-def predict(env, model, observations):
+def predict(env, model, goals, observations):
     frames_input = np.array(observations)
     actions_input = np.ones((len(observations), env.action_space.n))
-    return model.predict([frames_input, actions_input])
+    goals_input = np.array(goals)
+    return model.predict([frames_input, actions_input, goals_input])
 
 
 def fit_batch(env, model, target_model, batch):
-    observations, actions, rewards, next_observations, dones = batch
+    goals, observations, actions, rewards, next_observations, dones = batch
     # Predict the Q values of the next states. Passing ones as the action mask.
-    next_q_values = predict(env, target_model, next_observations)
+    next_q_values = predict(env, target_model, goals, next_observations)
     # The Q values of terminal states is 0 by definition.
     next_q_values[dones] = 0.0
     # The Q values of each start state is the reward + gamma * the max next state Q value
@@ -65,7 +66,7 @@ def fit_batch(env, model, target_model, batch):
     # Passing the actions as the mask and multiplying the targets by the actions masks.
     one_hot_actions = np.array([one_hot_encode(env, action) for action in actions])
     history = model.fit(
-        x=[observations, one_hot_actions],
+        x=[observations, one_hot_actions, goals],
         y=one_hot_actions * q_values[:, None],
         batch_size=BATCH_SIZE,
         verbose=0,
@@ -87,16 +88,18 @@ def create_atari_model(env):
     print('obs_shape {}'.format(obs_shape))
     frames_input = keras.layers.Input(obs_shape, name='frames_input')
     actions_input = keras.layers.Input((n_actions,), name='actions_input')
+    goals_input = keras.layers.Input((1,), name='goals_input')
     # Assuming that the input frames are still encoded from 0 to 255. Transforming to [0, 1].
     normalized = keras.layers.Lambda(lambda x: x / 255.0)(frames_input)
     conv_1 = keras.layers.Conv2D(filters=32, kernel_size=8, strides=4, activation='relu')(normalized)
     conv_2 = keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')(conv_1)
     conv_3 = keras.layers.Conv2D(filters=64, kernel_size=3, strides=1, activation='relu')(conv_2)
     conv_flattened = keras.layers.Flatten()(conv_3)
-    hidden = keras.layers.Dense(512, activation='relu')(conv_flattened)
+    concatenated = keras.layers.concatenate([conv_flattened, goals_input])
+    hidden = keras.layers.Dense(512, activation='relu')(concatenated)
     output = keras.layers.Dense(n_actions)(hidden)
     filtered_output = keras.layers.multiply([output, actions_input])
-    model = keras.models.Model([frames_input, actions_input], filtered_output)
+    model = keras.models.Model([frames_input, actions_input, goals_input], filtered_output)
     optimizer = keras.optimizers.Adam(lr=LEARNING_RATE, clipnorm=0.1)
     model.compile(optimizer, loss='logcosh')
     return model
@@ -106,16 +109,16 @@ def epsilon_for_step(step):
     return max(EPSILON_FINAL, (EPSILON_FINAL - EPSILON_START) / EPSILON_STEPS * step + EPSILON_START)
 
 
-def greedy_action(env, model, observation):
-    next_q_values = predict(env, model, observations=[observation])
+def greedy_action(env, model, goal, observation):
+    next_q_values = predict(env, model, goals=[goal], observations=[observation])
     return np.argmax(next_q_values)
 
 
-def epsilon_greedy_action(env, model, observation, epsilon):
+def epsilon_greedy_action(env, model, goal, observation, epsilon):
     if random.random() < epsilon:
         action = env.action_space.sample()
     else:
-        action = greedy_action(env, model, observation)
+        action = greedy_action(env, model, goal, observation)
     return action
 
 
@@ -160,7 +163,7 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
                 save_image(env, episode, step)
         else:
             obs = next_obs
-        action = epsilon_greedy_action(env, model, obs, EPSILON_FINAL)
+        action = epsilon_greedy_action(env, model, 0, obs, EPSILON_FINAL)
         next_obs, reward, done, _ = env.step(action)
         episode_return += reward
         episode_steps += 1
@@ -171,6 +174,10 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
     assert episode > 0
     episode_return_avg = episode_return_sum / episode
     return episode_return_avg, episode_return_min, episode_return_max
+
+
+def pixel_distance(obs_a, obs_b):
+    return np.sum(obs_a[:, :, -1] == obs_b[:, :, -1]) / (84 * 84.0)
 
 
 def train(env, env_eval, model, max_steps, name, logdir, logger):
@@ -185,39 +192,51 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
             if step % SNAPSHOT_EVERY == 0:
                 save_model(model, step, logdir, name)
             if done:
-                if episode > 0 and steps_after_logging >= LOG_EVERY:
-                    steps_after_logging = 0
-                    episode_end = time.time()
-                    episode_seconds = episode_end - episode_start
-                    episode_steps = step - episode_start_step
-                    steps_per_second = episode_steps / episode_seconds
-                    memory = psutil.virtual_memory()
-                    to_gb = lambda in_bytes: in_bytes / 1024 / 1024 / 1024
-                    print(
-                        "episode {} "
-                        "steps {}/{} "
-                        "loss {:.7f} "
-                        "return {} "
-                        "in {:.2f}s "
-                        "{:.1f} steps/s "
-                        "{:.1f}/{:.1f} GB RAM".format(
-                            episode,
-                            episode_steps,
-                            step,
-                            loss,
-                            episode_return,
-                            episode_seconds,
-                            steps_per_second,
-                            to_gb(memory.used),
-                            to_gb(memory.total),
-                        ))
-                    logger.log_scalar('episode_return', episode_return, step)
-                    logger.log_scalar('episode_steps', episode_steps, step)
-                    logger.log_scalar('episode_seconds', episode_seconds, step)
-                    logger.log_scalar('steps_per_second', steps_per_second, step)
-                    logger.log_scalar('epsilon', epsilon_for_step(step), step)
-                    logger.log_scalar('memory_used', to_gb(memory.used), step)
-                    logger.log_scalar('loss', loss, step)
+                if episode > 0:
+                    _, _, _, first_obs, _ = trajectories[0]
+                    _, _, _, final_obs, _ = trajectories[-1]
+                    first_obs_reward = pixel_distance(first_obs, final_obs)
+                    max_final_reward = 1 - first_obs_reward
+                    for trajectory in trajectories:
+                        obs, action, reward, next_obs, done = trajectory
+                        replay.add(0, obs, action, reward, next_obs, done)
+                        her_final_reward = (pixel_distance(next_obs, final_obs) - first_obs_reward) / max_final_reward
+                        replay.add(1, obs, action, her_final_reward, next_obs, done)
+                    if steps_after_logging >= LOG_EVERY:
+                        steps_after_logging = 0
+                        episode_end = time.time()
+                        episode_seconds = episode_end - episode_start
+                        episode_steps = step - episode_start_step
+                        steps_per_second = episode_steps / episode_seconds
+                        memory = psutil.virtual_memory()
+                        to_gb = lambda in_bytes: in_bytes / 1024 / 1024 / 1024
+                        print(
+                            "episode {} "
+                            "steps {}/{} "
+                            "loss {:.7f} "
+                            "return {} "
+                            "in {:.2f}s "
+                            "{:.1f} steps/s "
+                            "{:.1f}/{:.1f} GB RAM".format(
+                                episode,
+                                episode_steps,
+                                step,
+                                loss,
+                                episode_return,
+                                episode_seconds,
+                                steps_per_second,
+                                to_gb(memory.used),
+                                to_gb(memory.total),
+                            ))
+                        logger.log_scalar('episode_return', episode_return, step)
+                        logger.log_scalar('episode_steps', episode_steps, step)
+                        logger.log_scalar('episode_seconds', episode_seconds, step)
+                        logger.log_scalar('steps_per_second', steps_per_second, step)
+                        logger.log_scalar('epsilon', epsilon_for_step(step), step)
+                        logger.log_scalar('memory_used', to_gb(memory.used), step)
+                        logger.log_scalar('loss', loss, step)
+                trajectories = []
+                goal = random.randint(0, 1)
                 episode_start = time.time()
                 episode_start_step = step
                 obs = env.reset()
@@ -226,20 +245,21 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                 epsilon = epsilon_for_step(step)
             else:
                 obs = next_obs
-            action = epsilon_greedy_action(env, model, obs, epsilon)
+            action = epsilon_greedy_action(env, model, goal, obs, epsilon)
             next_obs, reward, done, _ = env.step(action)
             episode_return += reward
-            replay.add(obs, action, reward, next_obs, done)
+            trajectories.append((obs, action, reward, next_obs, done))
+
             if step >= TRAIN_START and step % UPDATE_EVERY == 0:
                 if step % TARGET_UPDATE_EVERY == 0:
                     target_model.set_weights(model.get_weights())
                 batch = replay.sample(BATCH_SIZE)
                 loss = fit_batch(env, model, target_model, batch)
             if step == TRAIN_START:
-                validation_obs, _, _, _, _ = replay.sample(VALIDATION_SIZE)
+                validation_goals, validation_observations, _, _, _, _ = replay.sample(VALIDATION_SIZE)
             if step >= TRAIN_START and step % EVAL_EVERY == 0:
                 episode_return_avg, episode_return_min, episode_return_max = evaluate(env_eval, model)
-                q_values = predict(env, model, validation_obs)
+                q_values = predict(env, model, validation_goals, validation_observations)
                 max_q_values = np.max(q_values, axis=1)
                 avg_max_q_value = np.mean(max_q_values)
                 print(
