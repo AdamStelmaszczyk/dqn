@@ -25,9 +25,12 @@ from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
 
 
+def box_start(x):
+    return (x // BOX_PIXELS) * BOX_PIXELS
+
+
 def create_goal(position):
     goal = np.zeros(shape=(84, 84, 1))
-    box_start = lambda x: (x // BOX_PIXELS) * BOX_PIXELS
     start_x, start_y = map(box_start, position)
     goal[start_x:start_x + BOX_PIXELS, start_y:start_y + BOX_PIXELS, 0] = 255
     return goal
