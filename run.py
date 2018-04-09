@@ -24,6 +24,15 @@ except Exception as e:
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
 
+
+def create_goal(position):
+    goal = np.zeros(shape=(84, 84, 1))
+    box_start = lambda x: (x // BOX_PIXELS) * BOX_PIXELS
+    start_x, start_y = map(box_start, position)
+    goal[start_x:start_x + BOX_PIXELS, start_y:start_y + BOX_PIXELS, 0] = 255
+    return goal
+
+
 DISCOUNT_FACTOR_GAMMA = 0.99
 LEARNING_RATE = 0.0001
 UPDATE_EVERY = 4
@@ -40,6 +49,8 @@ EPSILON_FINAL = 0.02
 EPSILON_STEPS = 100000
 LOG_EVERY = 10000
 VALIDATION_SIZE = 500
+SIDE_BOXES = 4
+BOX_PIXELS = 84 // SIDE_BOXES
 
 
 def one_hot_encode(env, action):
@@ -86,15 +97,15 @@ def create_atari_model(env):
     print('obs_shape {}'.format(obs_shape))
     frames_input = keras.layers.Input(obs_shape, name='frames_input')
     actions_input = keras.layers.Input((n_actions,), name='actions_input')
-    goals_input = keras.layers.Input((1,), name='goals_input')
+    goals_input = keras.layers.Input((84, 84, 1), name='goals_input')
+    concatenated = keras.layers.concatenate([frames_input, goals_input])
     # Assuming that the input frames are still encoded from 0 to 255. Transforming to [0, 1].
-    normalized = keras.layers.Lambda(lambda x: x / 255.0)(frames_input)
+    normalized = keras.layers.Lambda(lambda x: x / 255.0)(concatenated)
     conv_1 = keras.layers.Conv2D(filters=32, kernel_size=8, strides=4, activation='relu')(normalized)
     conv_2 = keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')(conv_1)
     conv_3 = keras.layers.Conv2D(filters=64, kernel_size=3, strides=1, activation='relu')(conv_2)
     conv_flattened = keras.layers.Flatten()(conv_3)
-    concatenated = keras.layers.concatenate([conv_flattened, goals_input])
-    hidden = keras.layers.Dense(512, activation='relu')(concatenated)
+    hidden = keras.layers.Dense(512, activation='relu')(conv_flattened)
     output = keras.layers.Dense(n_actions)(hidden)
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input, goals_input], filtered_output)
@@ -155,15 +166,16 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
             episode += 1
             episode_return = 0.0
             episode_steps = 0
+            goal = sample_goal()
             if view:
                 env.render()
             if images:
                 save_image(env, episode, step)
         else:
             obs = next_obs
-        action = epsilon_greedy_action(env, model, 0, obs, EPSILON_FINAL)
-        next_obs, reward, done, _ = env.step(action)
-        episode_return += reward
+        action = epsilon_greedy_action(env, model, goal, obs, EPSILON_FINAL)
+        next_obs, _, done, _ = env.step(action)
+        episode_return += goal_reward(next_obs, goal)
         episode_steps += 1
         if view:
             env.render()
@@ -174,8 +186,36 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
     return episode_return_avg, episode_return_min, episode_return_max
 
 
-def pixel_distance(obs_a, obs_b):
-    return np.sum(obs_a[:, :, -1] == obs_b[:, :, -1]) / (84 * 84.0)
+def find_agent(obs):
+    image = obs[:, :, -1]
+    indices = np.flatnonzero(image == 110)
+    if len(indices) == 0:
+        return None
+    index = indices[0]
+    x = index % 84
+    y = index // 84
+    return x, y
+
+
+def goal_reward(obs, goal):
+    agent_position = find_agent(obs)
+    if agent_position is None:
+        return 0
+    return int(goal[agent_position] > 0)
+
+
+def find_last_agent_position(trajectory):
+    for experience in reversed(trajectory):
+        _, _, _, _, next_obs, _ = experience
+        agent = find_agent(next_obs)
+        if agent:
+            return agent
+    return None
+
+
+def sample_goal():
+    position = np.random.randint(0, 84, 2)
+    return create_goal(position)
 
 
 def train(env, env_eval, model, max_steps, name, logdir, logger):
@@ -191,15 +231,16 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                 save_model(model, step, logdir, name)
             if done:
                 if episode > 0:
-                    _, _, _, first_obs, _ = trajectories[0]
-                    _, _, _, final_obs, _ = trajectories[-1]
-                    first_obs_reward = pixel_distance(first_obs, final_obs)
-                    max_final_reward = 1 - first_obs_reward
-                    for trajectory in trajectories:
-                        obs, action, reward, next_obs, done = trajectory
-                        replay.add(0, obs, action, reward, next_obs, done)
-                        her_final_reward = (pixel_distance(next_obs, final_obs) - first_obs_reward) / max_final_reward
-                        replay.add(1, obs, action, her_final_reward, next_obs, done)
+                    agent = find_last_agent_position(trajectory)
+                    if agent:
+                        extra_goal = create_goal(agent)
+                        for experience in trajectory:
+                            goal, obs, action, reward, next_obs, done = experience
+                            replay.add(goal, obs, action, reward, next_obs, done)
+                            # Hindsight Experience Replay - add experience with an extra goal, that was reached
+                            replay.add(extra_goal, obs, action, goal_reward(next_obs, extra_goal), next_obs, done)
+                    else:
+                        print("Not found the agent in the trajectory - not adding it to the replay")
                     if steps_after_logging >= LOG_EVERY:
                         steps_after_logging = 0
                         episode_end = time.time()
@@ -233,8 +274,8 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                         logger.log_scalar('epsilon', epsilon_for_step(step), step)
                         logger.log_scalar('memory_used', to_gb(memory.used), step)
                         logger.log_scalar('loss', loss, step)
-                trajectories = []
-                goal = random.randint(0, 1)
+                trajectory = []
+                goal = sample_goal()
                 episode_start = time.time()
                 episode_start_step = step
                 obs = env.reset()
@@ -244,9 +285,10 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
             else:
                 obs = next_obs
             action = epsilon_greedy_action(env, model, goal, obs, epsilon)
-            next_obs, reward, done, _ = env.step(action)
+            next_obs, _, done, _ = env.step(action)
+            reward = goal_reward(next_obs, goal)
             episode_return += reward
-            trajectories.append((obs, action, reward, next_obs, done))
+            trajectory.append((goal, obs, action, reward, next_obs, done))
 
             if step >= TRAIN_START and step % UPDATE_EVERY == 0:
                 if step % TARGET_UPDATE_EVERY == 0:
@@ -313,9 +355,10 @@ def fix_neptune_args(args):
 def main(context):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
+    assert 84 % SIDE_BOXES == 0
     args = fix_neptune_args(context.params)
     print('args: {}'.format({arg: args[arg] for arg in args}))
-    env = make_atari('{}NoFrameskip-v4'.format(args.env))
+    env = make_atari('{}NoFrameskip-v4'.format(args.env), max_episode_steps=4000)
     set_seed(env, args.seed)
     if args.play:
         env = wrap_deepmind(env)
