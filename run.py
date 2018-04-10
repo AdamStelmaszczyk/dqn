@@ -5,6 +5,7 @@ from math import isnan
 import cv2
 import deepsense.neptune as neptune
 import numpy as np
+import pickle
 import psutil
 import random
 import tensorflow as tf
@@ -69,7 +70,21 @@ def predict(env, model, goals, observations):
     return model.predict([frames_input, actions_input, goals_input])
 
 
+def save_for_debug(env, model, target_model, batch):
+    model.save('model.h5')
+    target_model.save('target_model.h5')
+    pickle.dump((env, batch), open('debug.pkl', 'wb'))
+
+
+def load_for_debug():
+    model = keras.models.load_model('model.h5')
+    target_model = keras.models.load_model('target_model.h5')
+    env, batch = pickle.load(open('debug.pkl', 'rb'))
+    return env, model, target_model, batch
+
+
 def fit_batch(env, model, target_model, batch):
+    save_for_debug(env, model, target_model, batch)
     goals, observations, actions, rewards, next_observations, dones = batch
     # Predict the Q values of the next states. Passing ones as the action mask.
     next_q_values = predict(env, target_model, goals, next_observations)
@@ -87,7 +102,7 @@ def fit_batch(env, model, target_model, batch):
     )
     loss = history.history['loss'][0]
     if isnan(loss):
-        print('predicted q_values {}'.format(np.array2string(one_hot_actions * q_values[:, None], threshold=10000000)))
+        print("loss is NaN")
         sys.exit(1)
     return loss
 
@@ -363,7 +378,10 @@ def main(context):
     print('args: {}'.format({arg: args[arg] for arg in args}))
     env = make_atari('{}NoFrameskip-v4'.format(args.env), max_episode_steps=4000)
     set_seed(env, args.seed)
-    if args.play:
+    if args.debug:
+        env, model, target_model, batch = load_for_debug()
+        fit_batch(env, model, target_model, batch)
+    elif args.play:
         env = wrap_deepmind(env)
         play(env)
     else:

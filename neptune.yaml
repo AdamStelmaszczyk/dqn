@@ -13,6 +13,12 @@ tags: [plgrid, adam]
 
 parameters:
 
+  - name: debug
+    description: load debug files and run fit_batch with them
+    type: boolean
+    default: False
+    required: false
+
   - name: env
     description: Atari game name
     type: string
