@@ -123,6 +123,8 @@ def create_atari_model(env):
     params = {
         'activation': 'relu',
         'kernel_regularizer': regularizer,
+        'bias_regularizer': regularizer,
+        'activity_regularizer': regularizer,
     }
     conv_1 = keras.layers.Conv2D(filters=32, kernel_size=8, strides=4, **params)(normalized)
     conv_2 = keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, **params)(conv_1)
