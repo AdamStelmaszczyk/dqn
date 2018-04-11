@@ -70,3 +70,9 @@ parameters:
     type: boolean
     default: False
     required: false
+
+  - name: weights
+    description: print model weights
+    type: boolean
+    default: False
+    required: false

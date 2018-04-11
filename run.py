@@ -377,6 +377,16 @@ def fix_neptune_args(args):
     return args
 
 
+def print_weights(model):
+    for layer in model.layers:
+        weights_list = layer.get_weights()
+        for weights in weights_list:
+            print(np.array2string(weights, threshold=100000000))
+        print()
+        print('--------------------------------------------------------------------')
+        print()
+
+
 def main(context):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
@@ -385,14 +395,17 @@ def main(context):
     print('args: {}'.format({arg: args[arg] for arg in args}))
     env = make_atari('{}NoFrameskip-v4'.format(args.env), max_episode_steps=4000)
     set_seed(env, args.seed)
-    if args.debug:
+    env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=True)
+    if args.weights:
+        model = load_or_create_model(env_train, args.model)
+        print_weights(model)
+    elif args.debug:
         env, model, target_model, batch = load_for_debug()
         fit_batch(env, model, target_model, batch)
     elif args.play:
         env = wrap_deepmind(env)
         play(env)
     else:
-        env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=True)
         env_eval = wrap_deepmind(env, frame_stack=True)
         model = load_or_create_model(env_train, args.model)
         if args.view or args.images or args.eval:
