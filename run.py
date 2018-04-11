@@ -84,7 +84,6 @@ def load_for_debug():
 
 
 def fit_batch(env, model, target_model, batch):
-    # save_for_debug(env, model, target_model, batch)
     goals, observations, actions, rewards, next_observations, dones = batch
     # Predict the Q values of the next states. Passing ones as the action mask.
     next_q_values = predict(env, target_model, goals, next_observations)
@@ -102,7 +101,8 @@ def fit_batch(env, model, target_model, batch):
     )
     loss = history.history['loss'][0]
     if isnan(loss):
-        print("loss is NaN")
+        save_for_debug(env, model, target_model, batch)
+        print("loss is NaN, saved files for debug")
         sys.exit(1)
     return loss
 
