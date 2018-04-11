@@ -119,7 +119,7 @@ def create_atari_model(env):
     concatenated = keras.layers.concatenate([frames_input, goals_input])
     # Assuming that the input frames are still encoded from 0 to 255. Transforming to [0, 1].
     normalized = keras.layers.Lambda(lambda x: x / 255.0)(concatenated)
-    regularizer = keras.regularizers.l2(0.01)
+    regularizer = keras.regularizers.l2(0.0001)
     params = {
         'activation': 'relu',
         'kernel_regularizer': regularizer,
