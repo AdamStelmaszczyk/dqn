@@ -84,7 +84,7 @@ def load_for_debug():
 
 
 def fit_batch(env, model, target_model, batch):
-    save_for_debug(env, model, target_model, batch)
+    # save_for_debug(env, model, target_model, batch)
     goals, observations, actions, rewards, next_observations, dones = batch
     # Predict the Q values of the next states. Passing ones as the action mask.
     next_q_values = predict(env, target_model, goals, next_observations)
@@ -119,11 +119,18 @@ def create_atari_model(env):
     concatenated = keras.layers.concatenate([frames_input, goals_input])
     # Assuming that the input frames are still encoded from 0 to 255. Transforming to [0, 1].
     normalized = keras.layers.Lambda(lambda x: x / 255.0)(concatenated)
-    conv_1 = keras.layers.Conv2D(filters=32, kernel_size=8, strides=4, activation='relu')(normalized)
-    conv_2 = keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, activation='relu')(conv_1)
-    conv_3 = keras.layers.Conv2D(filters=64, kernel_size=3, strides=1, activation='relu')(conv_2)
+    regularizer = keras.regularizers.l2(0.01)
+    params = {
+        'activation': 'relu',
+        'kernel_regularizer': regularizer,
+        'bias_regularizer': regularizer,
+        'activity_regularizer': regularizer,
+    }
+    conv_1 = keras.layers.Conv2D(filters=32, kernel_size=8, strides=4, **params)(normalized)
+    conv_2 = keras.layers.Conv2D(filters=64, kernel_size=4, strides=2, **params)(conv_1)
+    conv_3 = keras.layers.Conv2D(filters=64, kernel_size=3, strides=1, **params)(conv_2)
     conv_flattened = keras.layers.Flatten()(conv_3)
-    hidden = keras.layers.Dense(512, activation='relu')(conv_flattened)
+    hidden = keras.layers.Dense(512, **params)(conv_flattened)
     output = keras.layers.Dense(n_actions)(hidden)
     filtered_output = keras.layers.multiply([output, actions_input])
     model = keras.models.Model([frames_input, actions_input, goals_input], filtered_output)
