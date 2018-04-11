@@ -21,7 +21,7 @@ REPLAY_BUFFER_SIZE = 100000 and stacking 4 frames in the observation already use
 3. Create `dqn` conda environment: `conda create -n dqn python=3.5.2 -y`.
 4. Activate `dqn` conda environment: `source activate dqn`. All the following commands should be run in the activated `dqn` environment.
 5. Install basic dependencies: `pip install -r requirements.txt`.
-6. If you wish to use a GPU: `pip install -r requirements-gpu.txt`.
+6. If you wish to use a GPU: `pip install -r requirements-gpu.txt`. Also use [correct](https://github.com/mind/wheels#cuda) CUDA and cuDNN versions. For TensorFlow 1.4, this is CUDA 8 or 9 and cudNN 6 or 7.
 
 There is an automatic build on Travis which [does the same](https://github.com/AdamStelmaszczyk/dqn/blob/master/.travis.yml).
 
