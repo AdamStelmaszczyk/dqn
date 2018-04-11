@@ -355,6 +355,7 @@ def load_or_create_model(env, model_filename):
         print('Loaded {}'.format(model_filename))
     else:
         model = create_atari_model(env)
+    model.summary()
     return model
 
 
