@@ -275,7 +275,7 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                             "episode {} "
                             "steps {}/{} "
                             "loss {:.7f} "
-                            "return {} "
+                            "return {:.3f} "
                             "in {:.2f}s "
                             "{:.1f} steps/s "
                             "{:.1f}/{:.1f} GB RAM".format(
