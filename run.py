@@ -174,7 +174,7 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
     for step in range(1, eval_steps):
         if done:
             if episode > 0:
-                print("eval episode {} steps {} return {}".format(
+                print("eval episode {} steps {} return {:.3f}".format(
                     episode,
                     episode_steps,
                     episode_return,
