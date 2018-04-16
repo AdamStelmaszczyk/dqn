@@ -25,18 +25,6 @@ except Exception as e:
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
 
-
-def box_start(x):
-    return (x // BOX_PIXELS) * BOX_PIXELS
-
-
-def create_goal(position):
-    goal = np.zeros(shape=(84, 84, 1))
-    start_x, start_y = map(box_start, position)
-    goal[start_x:start_x + BOX_PIXELS, start_y:start_y + BOX_PIXELS, 0] = 255
-    return goal
-
-
 DISCOUNT_FACTOR_GAMMA = 0.99
 LEARNING_RATE = 0.0001
 UPDATE_EVERY = 4
@@ -55,6 +43,17 @@ LOG_EVERY = 10000
 VALIDATION_SIZE = 500
 SIDE_BOXES = 4
 BOX_PIXELS = 84 // SIDE_BOXES
+
+
+def box_start(x):
+    return (x // BOX_PIXELS) * BOX_PIXELS
+
+
+def create_goal(position):
+    goal = np.zeros(shape=(84, 84, 1))
+    start_x, start_y = map(box_start, position)
+    goal[start_x:start_x + BOX_PIXELS, start_y:start_y + BOX_PIXELS, 0] = 255
+    return goal
 
 
 def one_hot_encode(env, action):
@@ -259,7 +258,7 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                         for experience in trajectory:
                             goal, obs, action, reward, next_obs, done = experience
                             replay.add(goal, obs, action, reward, next_obs, done)
-                            # Hindsight Experience Replay - add experience with an extra goal, that was reached
+                            # Hindsight Experience Replay - add experience with an extra goal that was reached
                             replay.add(extra_goal, obs, action, goal_reward(next_obs, extra_goal), next_obs, done)
                     else:
                         print("Not found the agent in the trajectory - not adding it to the replay")
