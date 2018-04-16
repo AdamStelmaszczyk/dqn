@@ -220,9 +220,10 @@ def find_agent(obs):
 
 def goal_reward(obs, goal):
     agent_position = find_agent(obs)
-    if agent_position is None:
-        return 0
-    return int(goal[agent_position] > 0)
+    goal_reached = False
+    if agent_position is not None:
+        goal_reached = goal[agent_position] > 0
+    return float(goal_reached) / 1000
 
 
 def find_last_agent_position(trajectory):
