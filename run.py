@@ -174,7 +174,7 @@ def evaluate(env, model, view=False, images=False, eval_steps=EVAL_STEPS):
     for step in range(1, eval_steps):
         if done:
             if episode > 0:
-                print("eval episode {} steps {} return {:.3f}".format(
+                print("eval episode {} steps {} return {}".format(
                     episode,
                     episode_steps,
                     episode_return,
@@ -222,7 +222,7 @@ def goal_reward(obs, goal):
     goal_reached = False
     if agent_position is not None:
         goal_reached = goal[agent_position] > 0
-    return float(goal_reached) / 1000
+    return float(goal_reached)
 
 
 def find_last_agent_position(trajectory):
@@ -274,7 +274,7 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                             "episode {} "
                             "steps {}/{} "
                             "loss {:.7f} "
-                            "return {:.3f} "
+                            "return {} "
                             "in {:.2f}s "
                             "{:.1f} steps/s "
                             "{:.1f}/{:.1f} GB RAM".format(
