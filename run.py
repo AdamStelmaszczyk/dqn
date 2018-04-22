@@ -43,6 +43,8 @@ LOG_EVERY = 10000
 VALIDATION_SIZE = 500
 SIDE_BOXES = 4
 BOX_PIXELS = 84 // SIDE_BOXES
+STRATEGY = 'future'
+K_EXTRA_GOALS = 4
 
 
 def box_start(x):
@@ -225,13 +227,26 @@ def goal_reward(obs, goal):
     return float(goal_reached)
 
 
-def find_last_agent_position(trajectory):
+def final_goal(trajectory):
     for experience in reversed(trajectory):
         _, _, _, _, next_obs, _ = experience
         agent = find_agent(next_obs)
         if agent:
-            return agent
+            return create_goal(agent)
     return None
+
+
+def future_goals(i, trajectory):
+    goals = []
+    if i + 1 >= len(trajectory):
+        return None
+    steps = np.random.randint(i + 1, len(trajectory), K_EXTRA_GOALS)
+    for step in steps:
+        _, _, _, _, next_obs, _ = trajectory[step]
+        agent = find_agent(next_obs)
+        if agent:
+            goals.append(create_goal(agent))
+    return goals
 
 
 def sample_goal():
@@ -252,16 +267,17 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                 save_model(model, step, logdir, name)
             if done:
                 if episode > 0:
-                    agent = find_last_agent_position(trajectory)
-                    if agent:
-                        extra_goal = create_goal(agent)
-                        for experience in trajectory:
-                            goal, obs, action, reward, next_obs, done = experience
-                            replay.add(goal, obs, action, reward, next_obs, done)
-                            # Hindsight Experience Replay - add experience with an extra goal that was reached
-                            replay.add(extra_goal, obs, action, goal_reward(next_obs, extra_goal), next_obs, done)
-                    else:
-                        print("Not found the agent in the trajectory - not adding it to the replay")
+                    if STRATEGY == 'final':
+                        extra_goals = [final_goal(trajectory)]
+                    for i, experience in enumerate(trajectory):
+                        goal, obs, action, reward, next_obs, done = experience
+                        replay.add(goal, obs, action, reward, next_obs, done)
+                        # Hindsight Experience Replay - add experiences with extra goals that were reached
+                        if STRATEGY == 'future':
+                            extra_goals = future_goals(i, trajectory)
+                        if extra_goals:
+                            for extra_goal in extra_goals:
+                                replay.add(extra_goal, obs, action, goal_reward(next_obs, extra_goal), next_obs, done)
                     if steps_after_logging >= LOG_EVERY:
                         steps_after_logging = 0
                         episode_end = time.time()
@@ -388,6 +404,7 @@ def main(context):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
     assert 84 % SIDE_BOXES == 0
+    assert STRATEGY in ['final', 'future']
     args = fix_neptune_args(context.params)
     print('args: {}'.format({arg: args[arg] for arg in args}))
     env = make_atari('{}NoFrameskip-v4'.format(args.env), max_episode_steps=4000)
