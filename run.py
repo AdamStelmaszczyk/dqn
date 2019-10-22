@@ -1,18 +1,16 @@
-import sys
 import time
 from math import isnan
 
+import argparse
 import cv2
-import deepsense.neptune as neptune
 import numpy as np
 import pickle
 import psutil
 import random
+import sys
 import tensorflow as tf
 import tensorflow.contrib.keras as keras
 import traceback
-
-from loggers import TensorBoardLogger, NeptuneLogger, AggregatedLogger
 
 try:
     from gym.utils.play import play
@@ -24,6 +22,7 @@ except Exception as e:
 
 from atari_wrappers import wrap_deepmind, make_atari
 from replay_buffer import ReplayBuffer
+from tensor_board_logger import TensorBoardLogger
 
 DISCOUNT_FACTOR_GAMMA = 0.99
 LEARNING_RATE = 0.0001
@@ -254,11 +253,14 @@ def sample_goal():
     return create_goal(position)
 
 
-def train(env, env_eval, model, max_steps, name, logdir, logger):
+def train(env, env_eval, model, max_steps, name):
     target_model = create_atari_model(env)
     replay = ReplayBuffer(REPLAY_BUFFER_SIZE)
     done = True
     episode = 0
+    logdir = '{}-log'.format(name)
+    board = TensorBoardLogger(logdir)
+    print('Created {}'.format(logdir))
     steps_after_logging = 0
     loss = 0.0
     for step in range(1, max_steps + 1):
@@ -304,13 +306,13 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                                 to_gb(memory.used),
                                 to_gb(memory.total),
                             ))
-                        logger.log_scalar('episode_return', episode_return, step)
-                        logger.log_scalar('episode_steps', episode_steps, step)
-                        logger.log_scalar('episode_seconds', episode_seconds, step)
-                        logger.log_scalar('steps_per_second', steps_per_second, step)
-                        logger.log_scalar('epsilon', epsilon_for_step(step), step)
-                        logger.log_scalar('memory_used', to_gb(memory.used), step)
-                        logger.log_scalar('loss', loss, step)
+                        board.log_scalar('episode_return', episode_return, step)
+                        board.log_scalar('episode_steps', episode_steps, step)
+                        board.log_scalar('episode_seconds', episode_seconds, step)
+                        board.log_scalar('steps_per_second', steps_per_second, step)
+                        board.log_scalar('epsilon', epsilon_for_step(step), step)
+                        board.log_scalar('memory_used', to_gb(memory.used), step)
+                        board.log_scalar('loss', loss, step)
                 trajectory = []
                 goal = sample_goal()
                 episode_start = time.time()
@@ -353,10 +355,10 @@ def train(env, env_eval, model, max_steps, name, logdir, logger):
                         episode_return_max,
                         avg_max_q_value,
                     ))
-                logger.log_scalar('episode_return_avg', episode_return_avg, step)
-                logger.log_scalar('episode_return_min', episode_return_min, step)
-                logger.log_scalar('episode_return_max', episode_return_max, step)
-                logger.log_scalar('avg_max_q_value', avg_max_q_value, step)
+                board.log_scalar('episode_return_avg', episode_return_avg, step)
+                board.log_scalar('episode_return_min', episode_return_min, step)
+                board.log_scalar('episode_return_max', episode_return_max, step)
+                board.log_scalar('avg_max_q_value', avg_max_q_value, step)
             steps_after_logging += 1
         except KeyboardInterrupt:
             save_model(model, step, logdir, name)
@@ -380,16 +382,6 @@ def set_seed(env, seed):
     env.seed(seed)
 
 
-def fix_neptune_args(args):
-    '''
-    neptune run --offline gives 'None' as a default value for string parameters instead of None.
-    '''
-    for arg in args:
-        if args[arg] == 'None':
-            args[arg] = None
-    return args
-
-
 def print_weights(model):
     for layer in model.layers:
         weights_list = layer.get_weights()
@@ -400,14 +392,13 @@ def print_weights(model):
         print()
 
 
-def main(context):
+def main(args):
     assert BATCH_SIZE <= TRAIN_START <= REPLAY_BUFFER_SIZE
     assert TARGET_UPDATE_EVERY % UPDATE_EVERY == 0
     assert 84 % SIDE_BOXES == 0
     assert STRATEGY in ['final', 'future']
-    args = fix_neptune_args(context.params)
-    print('args: {}'.format({arg: args[arg] for arg in args}))
-    env = make_atari('{}NoFrameskip-v4'.format(args.env), max_episode_steps=4000)
+    print(args)
+    env = make_atari('{}NoFrameskip-v4'.format(args.env))
     set_seed(env, args.seed)
     env_train = wrap_deepmind(env, frame_stack=True, episode_life=True, clip_rewards=True)
     if args.weights:
@@ -426,17 +417,23 @@ def main(context):
             evaluate(env_eval, model, args.view, args.images)
         else:
             max_steps = 100 if args.test else MAX_STEPS
-            logdir = '{}-log'.format(context.params.name)
-            board = TensorBoardLogger(logdir)
-            print('Created {}'.format(logdir))
-            neptune = NeptuneLogger(context)
-            logger = AggregatedLogger([board, neptune])
-            train(env_train, env_eval, model, max_steps, args.name, logdir, logger)
+            train(env_train, env_eval, model, max_steps, args.name)
             if args.test:
                 filename = save_model(model, EVAL_STEPS, logdir='.', name='test')
                 load_or_create_model(env_train, filename)
 
 
 if __name__ == '__main__':
-    context = neptune.Context()
-    main(context)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--debug', action='store_true', default=False, help='load debug files and run fit_batch with them')
+    parser.add_argument('--env', action='store', default='Breakout', help='Atari game name')
+    parser.add_argument('--eval', action='store_true', default=False, help='run evaluation with log only')
+    parser.add_argument('--images', action='store_true', default=False, help='save images during evaluation')
+    parser.add_argument('--model', action='store', default=None, help='model filename to load')
+    parser.add_argument('--name', action='store', default=time.strftime("%m-%d-%H-%M"), help='name for saved files')
+    parser.add_argument('--play', action='store_true', default=False, help='play with WSAD + Space')
+    parser.add_argument('--seed', action='store', type=int, help='pseudo random number generator seed')
+    parser.add_argument('--test', action='store_true', default=False, help='run tests')
+    parser.add_argument('--view', action='store_true', default=False, help='view evaluation in a window')
+    parser.add_argument('--weights', action='store_true', default=False, help='print model weights')
+    main(parser.parse_args())

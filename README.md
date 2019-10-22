@@ -32,11 +32,28 @@ There is an automatic build on Travis which [does the same](https://github.com/A
 
 ## Usage
 
-Basic command is `neptune run --offline`, which runs `run.py` locally. For all the possible flags check `neptune.yaml`.
+Basic file is `run.py`.
+
+```
+usage: run.py [-h] [--env ENV] [--eval] [--images] [--model MODEL]
+              [--name NAME] [--play] [--seed SEED] [--test] [--view]
+
+optional arguments:
+  -h, --help     show this help message and exit
+  --env ENV      Atari game name (default: Breakout)
+  --eval         run evaluation with log only (default: False)
+  --images       save images during evaluation (default: False)
+  --model MODEL  model filename to load (default: None)
+  --name NAME    name for saved files (default: 03-20-20-29)
+  --play         play with WSAD + Space (default: False)
+  --seed SEED    pseudo random number generator seed (default: None)
+  --test         run tests (default: False)
+  --view         view evaluation in a window (default: False)
+```
 
 ### Train
 
-`neptune run --offline -- --env Pong`
+`python run.py --env Pong`
 
 There are 60 games you can choose from:
 
@@ -44,7 +61,7 @@ There are 60 games you can choose from:
 
 ### Play using the same observations as DQN
 
-`neptune run --offline -- --play True`
+`python run.py --play`
 
 Keys:
 
@@ -56,7 +73,7 @@ Keys:
 
 ### Generate GIFs
 
-1. Generate images: `neptune run --offline -- --images True --model PONG_MODEL.h5 --env Pong`.
+1. Generate images: `python run.py --images --model=PONG_MODEL.h5 --env Pong`.
 2. We will use `convert` tool, which is part of ImageMagick, [here](https://www.imagemagick.org/script/download.php) are the installation instructions.
 3. Convert images from episode 1 to GIF: `convert -layers optimize-frame 1_*.png 1.gif`
 
