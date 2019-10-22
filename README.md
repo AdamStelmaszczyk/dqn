@@ -18,17 +18,16 @@ REPLAY_BUFFER_SIZE = 100000 and stacking 4 frames in the observation already use
 
 1. Clone this repo: `git clone https://github.com/AdamStelmaszczyk/dqn.git`.
 2. [Install `conda`](https://conda.io/docs/user-guide/install/index.html) for dependency management.
-3. Create `dqn` conda environment: `conda create -n dqn python=3.5.2 -y`.
-4. Activate `dqn` conda environment: `source activate dqn`. All the following commands should be run in the activated `dqn` environment.
-5. Install basic dependencies: `pip install -r requirements.txt`.
-6. If you wish to use a GPU: `pip install -r requirements-gpu.txt`. Also use [correct](https://github.com/mind/wheels#cuda) CUDA and cuDNN versions. For TensorFlow 1.4, this is CUDA 8 or 9 and cudNN 6 or 7.
+3. Create `dqn` conda environment: `conda create -yn dqn python=3 tensorflow tensorflow-gpu opencv psutil`.
+4. Activate `dqn` conda environment: `conda activate dqn`. All the following commands should be run in the activated `dqn` environment.
+5. Install OpenAI gym: `pip install gym[atari]`.
 
 There is an automatic build on Travis which [does the same](https://github.com/AdamStelmaszczyk/dqn/blob/master/.travis.yml).
 
 ## Uninstall
 
-1. Deactivate conda environment: `source deactivate`.
-2. Remove `dqn` conda environment: `conda env remove -n dqn -y`.
+1. Deactivate conda environment: `conda deactivate`.
+2. Remove `dqn` conda environment: `conda env remove -yn dqn`.
 
 ## Usage
 

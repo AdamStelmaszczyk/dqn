@@ -5,10 +5,10 @@ install:
   - bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda3
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - conda config --set always_yes yes --set changeps1 no
-  - conda create -n dqn python=3.5.2
-  - source activate dqn
+  - conda create -n dqn python=3 tensorflow tensorflow-gpu
+  - conda activate dqn
+  - pip install gym[atari]
   - git clone https://github.com/AdamStelmaszczyk/dqn.git
-  - pip install -r requirements.txt
 
 script:
   - cd dqn
