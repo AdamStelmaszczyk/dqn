@@ -16,7 +16,7 @@ matplotlib==2.1.2
 numpy==1.14.2
 olefile==0.44
 opencv-python==3.4.0.12
-Pillow==5.0.0
+Pillow==6.2.0
 ply==3.11
 protobuf==3.5.2.post1
 psutil==5.4.3
