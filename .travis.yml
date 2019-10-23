@@ -6,7 +6,7 @@ install:
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - conda config --set always_yes yes --set changeps1 no
   - conda create -n dqn python=3 tensorflow tensorflow-gpu
-  - conda activate dqn
+  - source activate dqn
   - pip install gym[atari]
   - git clone https://github.com/AdamStelmaszczyk/dqn.git
 
