@@ -34,20 +34,23 @@ There is an automatic build on Travis which [does the same](https://github.com/A
 Basic file is `run.py`.
 
 ```
-usage: run.py [-h] [--env ENV] [--eval] [--images] [--model MODEL]
+usage: run.py [-h] [--debug] [--env ENV] [--eval] [--images] [--model MODEL]
               [--name NAME] [--play] [--seed SEED] [--test] [--view]
+              [--weights]
 
 optional arguments:
   -h, --help     show this help message and exit
+  --debug        load debug files and run fit_batch with them (default: False)
   --env ENV      Atari game name (default: Breakout)
   --eval         run evaluation with log only (default: False)
   --images       save images during evaluation (default: False)
   --model MODEL  model filename to load (default: None)
-  --name NAME    name for saved files (default: 03-20-20-29)
+  --name NAME    name for saved files (default: 10-23-22-04)
   --play         play with WSAD + Space (default: False)
   --seed SEED    pseudo random number generator seed (default: None)
   --test         run tests (default: False)
   --view         view evaluation in a window (default: False)
+  --weights      print model weights (default: False)
 ```
 
 ### Train
