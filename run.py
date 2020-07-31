@@ -1,16 +1,16 @@
-import time
-from math import isnan
-
 import argparse
-import cv2
-import numpy as np
 import pickle
-import psutil
 import random
 import sys
-import tensorflow as tf
-import tensorflow.contrib.keras as keras
+import time
 import traceback
+from math import isnan
+
+import cv2
+import numpy as np
+import psutil
+import tensorflow as tf
+from tensorflow import keras
 
 try:
     from gym.utils.play import play
